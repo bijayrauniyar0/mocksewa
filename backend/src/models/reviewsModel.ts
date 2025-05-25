@@ -28,7 +28,7 @@ Review.init(
     },
     review: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
     },
     rating: {
       type: DataTypes.FLOAT,

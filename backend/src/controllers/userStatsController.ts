@@ -364,7 +364,7 @@ export const getRadarMetrics = async (
     });
 
     if (userAttempts.length === 0) {
-      res.status(404).json({ message: 'No attempts found' });
+      res.status(200).json([]);
       return;
     }
     const sortedAttempts = [...userAttempts].sort(

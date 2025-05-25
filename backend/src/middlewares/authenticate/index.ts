@@ -37,7 +37,7 @@ export const authenticate = async (
       return;
     }
 
-    req.user = user; // Add user to request
+    req.user = user;
     next();
   } catch {
     res.clearCookie('token');

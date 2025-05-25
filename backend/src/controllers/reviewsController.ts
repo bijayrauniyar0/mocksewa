@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 // import { uploadFileToDrive } from '../services/driveService';
 import Review from '../models/reviewsModel';
-import { BASE_URL } from '../constants';
+import User from '../models/userModels';
+import MockTest from '../models/mockTestModel';
+import Stream from '../models/streamModels';
 // import { AzureBlobService } from '../services/azureBlobService';
 
 export const createReview = async (
@@ -9,70 +11,56 @@ export const createReview = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // const { file } = req;
-    const { full_name, email, review, exam_type, rating } = req.body;
+    const { id } = req.user;
+    const { review, mock_test_id, rating } = req.body;
 
-    try {
-      // const fileResponse = null;
-      // if (file) {
-      //   const filePath = file.path;
-      //   const blobName = `reviews/${Date.now()}-${file.originalname}`;
-      //   const azureService = new AzureBlobService();
-      //   await azureService.uploadProfilePic(filePath, blobName);
-      // }
-      const reviewResponse = await Review.create({
-        full_name,
-        email,
-        review,
-        exam_type,
-        rating,
-        // profile_photo: fileResponse?.id || null,
-      });
-      if (!reviewResponse) {
-        res.status(500).json({ message: 'Failed to create review' });
-      }
-      res.status(201).json({
-        message: 'Review created successfully',
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to upload image', error });
-      return;
+    const reviewResponse = await Review.create({
+      user_id: id,
+      rating,
+      mock_test_id,
+      review,
+    });
+    if (!reviewResponse) {
+      res.status(500).json({ message: 'Failed to create review' });
     }
+    res.status(201).json({
+      message: 'Review created successfully',
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Internal Server Error', error });
+    res.status(500).json({ message: 'Failed to upload image', error });
+    return;
   }
 };
 
 export const getReviews = async (
-  req: Request<unknown, unknown, unknown, { apiKey?: string }>,
+  req: Request<unknown, unknown, unknown, { limit?: string }>,
   res: Response,
 ): Promise<void> => {
   try {
+    const { limit } = req.query;
     const reviews = await Review.findAll({
-      attributes: {
-        exclude: ['email', 'created_at'],
-      },
+      attributes: ['id', 'rating', 'review', 'created_at'],
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'avatar'],
+        },
+        {
+          model: MockTest,
+          attributes: ['id', 'title'],
+          include: [
+            {
+              model: Stream,
+              attributes: ['id', 'name'],
+            },
+          ],
+        },
+      ],
+      limit: Number(limit) || 10,
+      order: [['created_at', 'DESC']],
     });
 
-    const reviewsWithImageUrl = await Promise.all(
-      reviews.map(async review => {
-        const { profile_photo: fileId, ...restReviewData } = review.toJSON();
-
-        if (!fileId) {
-          return {
-            ...restReviewData,
-            profile_photo: null,
-          };
-        }
-        const imageUrl = `${BASE_URL}/api/private/image/${fileId}`;
-        return {
-          ...restReviewData,
-          profile_photo: imageUrl, // Only the URL here, not the file stream
-        };
-      }),
-    );
-
-    res.status(200).json(reviewsWithImageUrl);
+    res.status(200).json(reviews);
   } catch (error) {
     res.status(500).json({ message: 'Internal Server Error', error });
   }
