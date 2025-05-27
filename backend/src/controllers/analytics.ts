@@ -22,6 +22,7 @@ import Stream from '../models/streamModels';
 import User from '../models/userModels';
 import Section from '../models/sectionModel';
 import { format } from 'date-fns';
+import { paginate } from '../utils/paginate';
 // import User from '@Models/userModels';
 
 export async function seedUserScores(count: number = 100) {
@@ -68,19 +69,19 @@ export async function seedUserScores(count: number = 100) {
 
     // create scores
 
-    // const records = Array.from({ length: count }).map(() => {
-    //   const user_id = userIds[getRandomInt(0, userIds.length - 1)];
-    //   const mock_test_id = mockTestIds[getRandomInt(0, mockTestIds.length - 1)];
-    //   return {
-    //     user_id,
-    //     score: getRandomInt(7, 10),
-    //     created_at: getRandomDate(),
-    //     elapsed_time: getRandomInt(200, 600),
-    //     mock_test_id,
-    //   };
-    // });
+    const records = Array.from({ length: count }).map(() => {
+      const user_id = userIds[getRandomInt(0, userIds.length - 1)];
+      const mock_test_id = mockTestIds[getRandomInt(0, mockTestIds.length - 1)];
+      return {
+        user_id,
+        score: getRandomInt(7, 10),
+        created_at: getRandomDate(),
+        elapsed_time: getRandomInt(200, 600),
+        mock_test_id,
+      };
+    });
 
-    // await UserScores.bulkCreate(records);
+    await UserScores.bulkCreate(records);
   } catch (error) {
     throw new Error('Error seeding user scores:');
   }
@@ -635,6 +636,51 @@ export const getUserScoresByMockTest = async (
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     res.status(200).json(dailyScores);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', details: error });
+  }
+};
+
+export const getHistorySessions = async (
+  req: Request<
+    { user_id: string },
+    unknown,
+    unknown,
+    { mock_test_id: string; page_size?: string; page?: string }
+  >,
+  res: Response,
+) => {
+  const { page_size = '15', page = '1' } = req.query;
+  const { user_id } = req.params;
+
+  try {
+    const scores = await paginate(
+      UserScores,
+      {
+        where: {
+          user_id,
+        },
+        attributes: ['id', 'score', 'elapsed_time', 'created_at'],
+        include: [
+          {
+            model: MockTest,
+            attributes: ['title'],
+            include: [
+              {
+                model: Stream,
+                attributes: ['name'],
+              },
+            ],
+          },
+        ],
+        order: [['created_at', 'DESC']],
+      },
+      {
+        page: +page,
+        page_size: +page_size,
+      },
+    );
+    res.status(200).json(scores);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', details: error });
   }

@@ -1,4 +1,5 @@
 import {
+  getHistorySessions,
   getPerformanceDetails,
   getPerformanceTrend,
   getRadarMetrics,
@@ -6,7 +7,7 @@ import {
   getUserScoresByMockTest,
   getUserStats,
   getUserStatsById,
-} from '../controllers/userStatsController';
+} from '../controllers/analytics';
 import express from 'express';
 import { authenticate } from '../middlewares/authenticate';
 
@@ -23,5 +24,6 @@ analyticsRouter.get('/performance-trend/', authenticate, getPerformanceTrend);
 analyticsRouter.get('/radar-metrics/:user_id', getRadarMetrics);
 analyticsRouter.get('/user-scores/:user_id', getUserScoresByMockTest);
 analyticsRouter.get('/user-stats/:user_id', getUserStatsById);
+analyticsRouter.get('/history-sessions/:user_id', getHistorySessions);
 
 export default analyticsRouter;
