@@ -7,7 +7,7 @@ import {
   getUserScoresByMockTest,
   getUserStats,
   getUserStatsById,
-} from '../controllers/analytics';
+} from '../controllers/analyticsController';
 import express from 'express';
 import { authenticate } from '../middlewares/authenticate';
 

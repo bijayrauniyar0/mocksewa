@@ -148,7 +148,7 @@ export class UserStatsService {
       const { MockTest, ...scoreData } = score.get();
       return {
         ...scoreData,
-        elapsed_time: formatToMinSec(scoreData.elapsed_time),
+        elapsed_time: scoreData.elapsed_time,
         title: `${MockTest.title}`,
         stream_name: MockTest.Stream.name,
         // accuracy: `${((score.score / 10) * 100).toFixed(2)} %`,
