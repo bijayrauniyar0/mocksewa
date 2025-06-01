@@ -44,7 +44,7 @@ Test.belongsToMany(Section, {
 Section.belongsToMany(Test, {
   through: TestSectionLink,
   foreignKey: 'section_id',
-  otherKey: 'test_id',
+  otherKey: 'mock_test_id',
 });
 
 export default TestSectionLink;

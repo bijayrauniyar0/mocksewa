@@ -8,6 +8,7 @@ class MockTest extends Model {
   public stream_id!: number;
   public title!: string;
   public time_limit!: number;
+  public question_count!: number;
   public Stream!: Stream;
   public Sections!: Section[];
   public getSections!: BelongsToManyGetAssociationsMixin<Section>;
@@ -26,6 +27,10 @@ MockTest.init(
     },
     title: {
       type: DataTypes.STRING,
+      allowNull: false,
+    },
+    question_count: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     time_limit: {

@@ -10,6 +10,10 @@ class UserScores extends Model {
   public user_id!: number;
   public score!: number;
   public mock_test_id!: string;
+  public question_count!: number;
+  public time_limit!: number;
+  public full_marks!: number;
+  public section_scores!: JSON;
   public MockTest!: MockTest;
   public elapsed_time!: number;
   public readonly created_at!: Date;
@@ -34,6 +38,26 @@ UserScores.init(
     score: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+    question_count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    full_marks: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    time_limit: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    section_scores: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: {},
     },
     unanswered_questions: {
       type: DataTypes.INTEGER,

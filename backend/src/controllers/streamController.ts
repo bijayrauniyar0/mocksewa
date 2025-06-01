@@ -146,6 +146,7 @@ export const getAllMockTests = async (req: Request, res: Response) => {
 
 export const getMockTestDetails = async (req: Request, res: Response) => {
   const { mock_test_id } = req.params;
+  const { question_count } = req.query;
   try {
     if (!mock_test_id) {
       res.status(400).json({ message: 'test_id is required' });
@@ -169,7 +170,14 @@ export const getMockTestDetails = async (req: Request, res: Response) => {
       });
       bookmark = !!bookmarks;
     }
-    res.status(200).json({ bookmark, ...sections, stream_name: streams?.name });
+    let { time_limit } = sections;
+    if (question_count && question_count !== sections.question_count) {
+      const timeLimitPerQuestion = time_limit / sections.question_count;
+      time_limit = Math.floor(timeLimitPerQuestion * Number(question_count));
+    }
+    res
+      .status(200)
+      .json({ bookmark, ...sections, time_limit, stream_name: streams?.name });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error });
   }

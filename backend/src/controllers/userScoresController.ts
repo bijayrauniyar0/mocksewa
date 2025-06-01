@@ -125,7 +125,16 @@ const compareAndNotify = async (
 
 export const createScoreEntry = async (req: Request, res: Response) => {
   try {
-    const { mock_test_id, score, elapsed_time } = req.body;
+    const {
+      mock_test_id,
+      score,
+      elapsed_time,
+      time_limit,
+      question_count,
+      unanswered_questions,
+      section_scores,
+      full_marks,
+    } = req.body;
     const user = req.user;
     const leaderboardService = new LeaderboardService();
     const oldRanks = await leaderboardService.getRankedUsers({
@@ -137,6 +146,11 @@ export const createScoreEntry = async (req: Request, res: Response) => {
       score,
       mock_test_id,
       elapsed_time,
+      time_limit,
+      question_count,
+      unanswered_questions,
+      section_scores,
+      full_marks,
     });
 
     const newRanks = await leaderboardService.getRankedUsers({

@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import { LeaderboardService } from './userScoresController';
 import UserScores from '../models/userScoresModels';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { formatToMinSec, getStartDateByTimePeriod } from '../utils/index';
 import {
   IGetUserStatsParamType,
@@ -73,11 +73,15 @@ export async function seedUserScores(count: number = 100) {
       const user_id = userIds[getRandomInt(0, userIds.length - 1)];
       const mock_test_id = mockTestIds[getRandomInt(0, mockTestIds.length - 1)];
       return {
-        user_id,
-        score: getRandomInt(7, 10),
+        user_id: 69,
+        score: getRandomInt(1, 10),
         created_at: getRandomDate(),
         elapsed_time: getRandomInt(200, 600),
-        mock_test_id,
+        question_count: 10,
+        unanswered_questions: 0,
+        full_marks: 10,
+        time_limit: 10,
+        mock_test_id:1,
       };
     });
 
@@ -123,10 +127,10 @@ export class UserStatsService {
               model: Stream,
               attributes: ['name'], // or other fields
             },
-            {
-              model: Section,
-              attributes: ['question_count', 'marks_per_question'],
-            },
+            // {
+            //   model: Section,
+            //   attributes: ['question_count', 'marks_per_question'],
+            // },
           ],
         },
       ],
@@ -137,121 +141,124 @@ export class UserStatsService {
   }
 
   async getRecentSessions(dataLimit: number = 5): Promise<IRecentSessions[]> {
-    const userScores = await this.getUserScores({
-      startDate: 'all_time',
-      otherFilterOptions: {
-        limit: dataLimit,
-        raw: false,
-      },
-    });
-    const scores = userScores.map(score => {
-      const { MockTest, ...scoreData } = score.get();
-      return {
-        ...scoreData,
-        elapsed_time: scoreData.elapsed_time,
-        title: `${MockTest.title}`,
-        stream_name: MockTest.Stream.name,
-        // accuracy: `${((score.score / 10) * 100).toFixed(2)} %`,
-        test: MockTest.title,
-      };
-    });
-    return scores;
-  }
-  async getUserPerformanceDetails({
-    time_period,
-    page = 1,
-    page_size = 15,
-    sort_by = 'created_at',
-    sort_order = 'desc',
-    mock_test_id,
-  }: Pick<IGetUserStatsParamType, 'time_period'> & {
-    page?: number;
-    page_size?: number;
-    sort_by?: keyof IPerformanceDetails;
-    sort_order?: 'asc' | 'desc';
-    mock_test_id: number;
-  }): Promise<{
-    results: IPerformanceDetails[];
-    total: number;
-    page: number;
-    next_page: number | null;
-  }> {
-    const leaderboardService = new LeaderboardService();
-
-    const startDate = getStartDateByTimePeriod(time_period);
-    const allScoresData = await this.getUserScores({
-      startDate,
-      mock_test_id: Number(mock_test_id),
-      controllerName: 'getUserPerformanceDetails',
-    });
-
-    const total = allScoresData.length;
-    const offset = (page - 1) * page_size;
-
-    // Sort
-    const validSortFields = ['elapsed_time', 'score', 'created_at'] as const;
-    const sortField = validSortFields.includes(sort_by as any)
-      ? sort_by
-      : 'created_at';
-
-    const sortedScores = allScoresData.sort((a, b) => {
-      const aVal = a.get?.()[sortField];
-      const bVal = b.get?.()[sortField];
-
-      if (aVal == null || bVal == null) return 0;
-      return sort_order === 'asc' ? aVal - bVal : bVal - aVal;
-    });
-
-    const scoresData = sortedScores.slice(offset, offset + page_size);
-
-    const userScoresStack: IPerformanceDetails[] = [];
-
-    const performanceDetails = await Promise.all(
-      scoresData.map(async (scoreModel, index) => {
-        const { MockTest, ...score } = scoreModel.get();
-        const response: IPerformanceDetails = {
-          ...score,
-          test: MockTest?.title,
-          date: score.created_at,
-          elapsed_time: formatToMinSec(score.elapsed_time),
-          title: `${score.mode} #${score.id}`,
-          accuracy: `${((score.score / 10) * 100).toFixed(2)} %`,
-          rank_change: 'N/A',
+    try {
+      const userScores = await this.getUserScores({
+        startDate: 'all_time',
+        otherFilterOptions: {
+          limit: dataLimit,
+          raw: false,
+        },
+      });
+      const scores = userScores.map(score => {
+        const { MockTest, ...scoreData } = score.get();
+        return {
+          ...scoreData,
+          elapsed_time: scoreData.elapsed_time,
+          title: `${MockTest.title}`,
+          stream_name: MockTest.Stream.name,
+          test: MockTest.title,
         };
-
-        const userRank = await leaderboardService.getRankedUsers({
-          startDate,
-          endDate: new Date(
-            new Date(score.created_at).getTime() - 24 * 60 * 60 * 1000,
-          ),
-          mock_test_id,
-        });
-
-        const userScoreDetail = userRank.find(
-          (user: any) => user.id === this.user_id,
-        );
-
-        const updatedResponse = {
-          ...response,
-          rank_change:
-            (userScoreDetail?.rank ?? 0) -
-            Number(userScoresStack[index - 1]?.rank_change ?? 0),
-        };
-
-        userScoresStack.push(updatedResponse);
-        return updatedResponse;
-
-        // return response;
-      }),
-    );
-
-    return {
-      results: performanceDetails,
-      total,
-      page,
-      next_page: offset + page_size < total ? page + 1 : null,
-    };
+      });
+      return scores;
+    } catch (error) {
+      throw new Error('Error fetching recent sessions: ' + error);
+    }
   }
+  // async getUserPerformanceDetails({
+  //   time_period,
+  //   page = 1,
+  //   page_size = 15,
+  //   sort_by = 'created_at',
+  //   sort_order = 'desc',
+  //   mock_test_id,
+  // }: Pick<IGetUserStatsParamType, 'time_period'> & {
+  //   page?: number;
+  //   page_size?: number;
+  //   sort_by?: keyof IPerformanceDetails;
+  //   sort_order?: 'asc' | 'desc';
+  //   mock_test_id: number;
+  // }): Promise<{
+  //   results: IPerformanceDetails[];
+  //   total: number;
+  //   page: number;
+  //   next_page: number | null;
+  // }> {
+  //   const leaderboardService = new LeaderboardService();
+
+  //   const startDate = getStartDateByTimePeriod(time_period);
+  //   const allScoresData = await this.getUserScores({
+  //     startDate,
+  //     mock_test_id: Number(mock_test_id),
+  //     controllerName: 'getUserPerformanceDetails',
+  //   });
+
+  //   const total = allScoresData.length;
+  //   const offset = (page - 1) * page_size;
+
+  //   // Sort
+  //   const validSortFields = ['elapsed_time', 'score', 'created_at'] as const;
+  //   const sortField = validSortFields.includes(sort_by as any)
+  //     ? sort_by
+  //     : 'created_at';
+
+  //   const sortedScores = allScoresData.sort((a, b) => {
+  //     const aVal = a.get?.()[sortField];
+  //     const bVal = b.get?.()[sortField];
+
+  //     if (aVal == null || bVal == null) return 0;
+  //     return sort_order === 'asc' ? aVal - bVal : bVal - aVal;
+  //   });
+
+  //   const scoresData = sortedScores.slice(offset, offset + page_size);
+
+  //   const userScoresStack: IPerformanceDetails[] = [];
+
+  //   const performanceDetails = await Promise.all(
+  //     scoresData.map(async (scoreModel, index) => {
+  //       const { MockTest, ...score } = scoreModel.get();
+  //       const response: IPerformanceDetails = {
+  //         ...score,
+  //         test: MockTest?.title,
+  //         date: score.created_at,
+  //         elapsed_time: formatToMinSec(score.elapsed_time),
+  //         title: `${score.mode} #${score.id}`,
+  //         accuracy: `${((score.score / 10) * 100).toFixed(2)} %`,
+  //         rank_change: 'N/A',
+  //       };
+
+  //       const userRank = await leaderboardService.getRankedUsers({
+  //         startDate,
+  //         endDate: new Date(
+  //           new Date(score.created_at).getTime() - 24 * 60 * 60 * 1000,
+  //         ),
+  //         mock_test_id,
+  //       });
+
+  //       const userScoreDetail = userRank.find(
+  //         (user: any) => user.id === this.user_id,
+  //       );
+
+  //       const updatedResponse = {
+  //         ...response,
+  //         rank_change:
+  //           (userScoreDetail?.rank ?? 0) -
+  //           Number(userScoresStack[index - 1]?.rank_change ?? 0),
+  //       };
+
+  //       userScoresStack.push(updatedResponse);
+  //       return updatedResponse;
+
+  //       // return response;
+  //     }),
+  //   );
+
+  //   return {
+  //     results: performanceDetails,
+  //     total,
+  //     page,
+  //     next_page: offset + page_size < total ? page + 1 : null,
+  //   };
+  // }
   getUserStats = async ({
     mock_test_id,
     leaderboardService,
@@ -292,6 +299,7 @@ export const getUserStats = async (
   req: Request<unknown, unknown, unknown, IGetUserStatsParamType>,
   res: Response,
 ) => {
+  // seedUserScores(50);
   const { time_period, mock_test_id } = req.query;
   const { user } = req;
   const leaderboardService = new LeaderboardService();
@@ -373,21 +381,6 @@ export const getRadarMetrics = async (
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     );
 
-    // Helper to calculate full marks and total questions from sections
-    const calcMockStats = (
-      sections: (typeof userAttempts)[0]['MockTest']['Sections'],
-    ) => {
-      const fullMarks = sections.reduce(
-        (sum, sec) => sum + sec.question_count * sec.marks_per_question,
-        0,
-      );
-      const totalQuestions = sections.reduce(
-        (sum, sec) => sum + sec.question_count,
-        0,
-      );
-      return { fullMarks, totalQuestions };
-    };
-
     let totalScore = 0;
     let totalFullMarks = 0;
     let totalElapsedTime = 0;
@@ -396,16 +389,12 @@ export const getRadarMetrics = async (
     let totalQuestions = 0;
 
     for (const attempt of userAttempts) {
-      const { Sections, time_limit } = attempt.MockTest;
-      const { fullMarks, totalQuestions: mockTotalQuestions } =
-        calcMockStats(Sections);
-
       totalScore += attempt.score;
-      totalFullMarks += fullMarks;
+      totalFullMarks += attempt.full_marks;
       totalElapsedTime += attempt.elapsed_time;
-      totalTimeGiven += time_limit * 60;
+      totalTimeGiven += attempt.time_limit * 60;
       totalUnansweredQuestions += attempt.unanswered_questions;
-      totalQuestions += mockTotalQuestions;
+      totalQuestions += attempt.question_count;
     }
 
     // Accuracy %
@@ -424,8 +413,7 @@ export const getRadarMetrics = async (
 
     // Improvement Rate
     const getDerivedScore = (attempt: (typeof userAttempts)[0]) => {
-      const { fullMarks } = calcMockStats(attempt.MockTest.Sections);
-      return attempt.score / fullMarks;
+      return attempt.score / attempt.question_count;
     };
     const improvementRate =
       (getDerivedScore(sortedAttempts[sortedAttempts.length - 1]) -
@@ -471,36 +459,54 @@ export const getPerformanceDetails = async (
   req: Request<unknown, unknown, unknown, IGetUserStatsParamType>,
   res: Response,
 ) => {
-  // await seedUserScores(100);
-
-  const {
-    time_period,
-    page = 1,
-    page_size = 15,
-    sort_by,
-    sort_order,
-    mock_test_id,
-  } = req.query;
+  const { page = 1, page_size = '15', mock_test_id } = req.query;
   const { user } = req;
-  const pageNum = parseInt(page as string, 10) || 1;
-  const pageSize = parseInt(page_size as string, 10) || 15;
-  const userStatsService = new UserStatsService(user.id);
+
   if (!mock_test_id) {
-    res.status(400).end('Mock test id is required');
-    return;
+    return res.status(400).json({ message: 'Mock test id is required' });
   }
+
   try {
-    const performanceDetails = await userStatsService.getUserPerformanceDetails(
+    const userScoresData = await paginate(
+      UserScores,
       {
-        time_period,
-        page: pageNum,
-        page_size: pageSize,
-        sort_by,
-        sort_order,
-        mock_test_id: Number(mock_test_id),
+        where: {
+          user_id: user.id,
+          mock_test_id: Number(mock_test_id),
+        },
+        attributes: [
+          'id',
+          'score',
+          'elapsed_time',
+          'created_at',
+          'full_marks',
+          'unanswered_questions',
+          // Include only necessary fields
+          [
+            // Calculate accuracy in DB
+            Sequelize.literal('(score::float / "full_marks"::float) * 100'),
+            'accuracy',
+          ],
+        ],
+        order: [['created_at', 'DESC']],
+      },
+      {
+        page: +page,
+        page_size: +page_size,
       },
     );
-    res.status(200).json(performanceDetails);
+
+    // Accuracy is already included from the DB, so we don’t need to map it in JS
+    // Format accuracy as a percentage string if needed
+    // const updatedResponse = userScoresData.results.map(scoreModel => {
+    //   const score = scoreModel.get();
+    //   return {
+    //     ...score,
+    //     accuracy: `${Number(score.accuracy).toFixed(2)} %`, // format as string
+    //   };
+    // });
+
+    res.status(200).json({ ...userScoresData });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', details: error });
   }

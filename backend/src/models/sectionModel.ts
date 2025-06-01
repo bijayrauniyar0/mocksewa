@@ -4,7 +4,7 @@ import sequelize from '../config/database';
 class Section extends Model {
   public id!: number;
   public name!: number;
-  public question_count!: number;
+  public question_weight!: number;
   public marks_per_question!: number;
   public negative_marking!: number;
 }
@@ -20,8 +20,8 @@ Section.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    question_count: {
-      type: DataTypes.INTEGER,
+    question_weight: {
+      type: DataTypes.FLOAT,
       allowNull: false,
     },
     marks_per_question: {
