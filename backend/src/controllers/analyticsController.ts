@@ -496,17 +496,7 @@ export const getPerformanceDetails = async (
       },
     );
 
-    // Accuracy is already included from the DB, so we don’t need to map it in JS
-    // Format accuracy as a percentage string if needed
-    // const updatedResponse = userScoresData.results.map(scoreModel => {
-    //   const score = scoreModel.get();
-    //   return {
-    //     ...score,
-    //     accuracy: `${Number(score.accuracy).toFixed(2)} %`, // format as string
-    //   };
-    // });
-
-    res.status(200).json({ ...userScoresData });
+   res.status(200).json({ ...userScoresData });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', details: error });
   }

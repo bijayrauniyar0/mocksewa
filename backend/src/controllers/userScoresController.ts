@@ -206,14 +206,15 @@ export const getLeaderboard = async (
       },
       attributes: ['id', 'avatar'],
     });
+    const userMap = new Map(users.map(u => [u.id, u.avatar]));
+    const prevRankMap = new Map(
+      previousUserRanks.map(prev => [prev.user_id, prev.rank]),
+    );
     const rankedUserScores = userRanks.map(user => {
       return {
         ...user,
-        previous_rank:
-          previousUserRanks.find(
-            previousRank => previousRank.user_id === user.user_id,
-          )?.rank || userRanks.length + 1,
-        avatar: users.find(u => u.id === user.user_id)?.avatar,
+        previous_rank: prevRankMap.get(user.user_id) || null,
+        avatar: userMap.get(user.user_id) || null,
       };
     });
 
