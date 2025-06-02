@@ -18,6 +18,7 @@ services:
     command: ["yarn", "dev"]
     depends_on:
       - db
+      - redis
     networks:
       - app-network # Ensure the backend is on the app-network
 
@@ -35,6 +36,28 @@ services:
   #     - app-network # Ensure the frontend is on the app-network
   #   depends_on:
   #     - backend
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    networks:
+      - app-network # Ensure Redis is on the app-network
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    ports:
+      - "5540:5540" 
+    depends_on:
+      - redis
+    restart: always
+    volumes:
+      - redisinsight_data:/db
+    networks:
+      - app-network # Ensure RedisInsight is on the app-network
   db:
     image: postgres:15
     container_name: hamrocoders-sql-db
@@ -67,4 +90,6 @@ networks:
 
 volumes:
   postgres_data:
+  redisinsight_data:
+  redis_data:
   # pgadmin_data:
