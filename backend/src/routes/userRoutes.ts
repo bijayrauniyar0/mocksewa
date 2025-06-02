@@ -7,7 +7,7 @@ import {
   getUserProfile,
   getPublicUserProfileById,
 } from '../controllers/userController';
-import { authenticate } from '../middlewares/authenticate';
+import { authenticate } from '../middlewares/authenticate/index';
 import { getMockTestsTakenByUser } from '../controllers/userScoresController';
 import multer from 'multer';
 

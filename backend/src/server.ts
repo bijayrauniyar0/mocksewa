@@ -14,7 +14,7 @@ import reviewRouter from './routes/reviewsRoutes';
 import privateImageRouter from './routes/privateImageRoutes';
 import bookmarkRouter from './routes/bookmarkRoutes';
 import discussionRouter from './routes/discussionRoutes';
-import { CORS_ORIGIN } from './constants';
+import { CORS_ORIGIN } from './constants/index';
 
 const app = express();
 

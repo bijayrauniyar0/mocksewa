@@ -3,7 +3,7 @@ import {
   getLeaderboard,
 } from '../controllers/userScoresController';
 import express from 'express';
-import { authenticate } from '..//middlewares/authenticate';
+import { authenticate } from '../middlewares/authenticate';
 
 const userScoresRouter = express.Router();
 

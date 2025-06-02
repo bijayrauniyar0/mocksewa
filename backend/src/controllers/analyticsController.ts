@@ -73,7 +73,7 @@ export async function seedUserScores(count: number = 100) {
       const user_id = userIds[getRandomInt(0, userIds.length - 1)];
       const mock_test_id = mockTestIds[getRandomInt(0, mockTestIds.length - 1)];
       return {
-        user_id: 69,
+        user_id,
         score: getRandomInt(1, 10),
         created_at: getRandomDate(),
         elapsed_time: getRandomInt(200, 600),
@@ -299,7 +299,7 @@ export const getUserStats = async (
   req: Request<unknown, unknown, unknown, IGetUserStatsParamType>,
   res: Response,
 ) => {
-  // seedUserScores(50);
+  // seedUserScores(300);
   const { time_period, mock_test_id } = req.query;
   const { user } = req;
   const leaderboardService = new LeaderboardService();
@@ -319,6 +319,7 @@ export const getUserStats = async (
     res.status(500).json({ message: 'Internal server error', details: error });
   }
 };
+
 export const getUserStatsById = async (
   req: Request<{ user_id: string }, unknown, unknown, IGetUserStatsParamType>,
   res: Response,

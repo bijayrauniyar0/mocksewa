@@ -6,6 +6,7 @@ import app from './server';
 import { CORS_ORIGIN, PORT } from './constants';
 import sequelize from './config/database';
 import { initializeSocket } from './sockets';
+import { connectRedis } from './config/redis';
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
@@ -18,11 +19,11 @@ const io = new Server(httpServer, {
 sequelize
   .authenticate()
   .then(() => {
-    console.log(CORS_ORIGIN?.split(' '));
     return sequelize.sync({ force: false });
   })
-  .then(() => {
+  .then(async () => {
     try {
+      await connectRedis();
       initializeSocket(io);
     } catch (err) {
       console.error('Socket error:', err);

@@ -10,6 +10,7 @@ import {
   ScoreFilter,
 } from '../constants/Types/leaderboard';
 import MockTest from '../models/mockTestModel';
+import redisClient from '../config/redis';
 
 export class LeaderboardService {
   async getUserScores({
@@ -68,6 +69,12 @@ export class LeaderboardService {
   };
 
   async getRankedUsers({ mock_test_id, startDate, endDate }: ScoreFilter) {
+    const cachedLeaderboard = await this.getCachedLeaderboard(
+      mock_test_id?.toString() || '',
+    );
+    if (cachedLeaderboard) {
+      return cachedLeaderboard;
+    }
     const allScores = await this.getUserScores({
       mock_test_id,
       startDate,
@@ -91,6 +98,19 @@ export class LeaderboardService {
         });
       }),
     );
+  }
+
+  async getCachedLeaderboard(mock_test_id: string): Promise<Rank[] | null> {
+    const cacheKey = `leaderboard:${mock_test_id}`;
+    const cachedLeaderboard = await redisClient.get(cacheKey);
+    if (cachedLeaderboard) {
+      return JSON.parse(cachedLeaderboard);
+    }
+    return null;
+  }
+  async setCachedLeaderboard(mock_test_id: string, data: Rank[]) {
+    const cacheKey = `leaderboard:${mock_test_id}`;
+    await redisClient.set(cacheKey, JSON.stringify(data));
   }
 }
 
@@ -137,6 +157,7 @@ export const createScoreEntry = async (req: Request, res: Response) => {
     } = req.body;
     const user = req.user;
     const leaderboardService = new LeaderboardService();
+
     const oldRanks = await leaderboardService.getRankedUsers({
       mock_test_id,
       startDate: 'all_time',
@@ -157,6 +178,7 @@ export const createScoreEntry = async (req: Request, res: Response) => {
       mock_test_id,
       startDate: 'all_time',
     });
+    await leaderboardService.setCachedLeaderboard(mock_test_id, newRanks);
 
     const test = await MockTest.findByPk(mock_test_id);
     await compareAndNotify(
@@ -178,9 +200,15 @@ export const getLeaderboard = async (
   req: Request<unknown, unknown, unknown, LeaderboardQuery>,
   res: Response,
 ) => {
-  const { mock_test_id, search } = req.query;
+  const { mock_test_id } = req.query;
   const leaderboardService = new LeaderboardService();
-
+  const cachedLeaderboard = await leaderboardService.getCachedLeaderboard(
+    mock_test_id,
+  );
+  if (cachedLeaderboard) {
+    res.status(200).json(cachedLeaderboard);
+    return;
+  }
   // const startDate = getStartDate(filter_by);
   const startDate = 'all_time';
 
@@ -191,7 +219,6 @@ export const getLeaderboard = async (
       mock_test_id: Number(mock_test_id),
       startDate,
     });
-
     const previousUserRanks = await leaderboardService.getRankedUsers({
       mock_test_id: Number(mock_test_id),
       startDate,
@@ -217,15 +244,10 @@ export const getLeaderboard = async (
         avatar: userMap.get(user.user_id) || null,
       };
     });
-
-    if (search) {
-      const searchLower = search.toLowerCase();
-      const filteredUserScores = rankedUserScores?.filter(user =>
-        user?.name?.toLowerCase()?.includes(searchLower),
-      );
-      res.status(200).json([...filteredUserScores]);
-      return;
-    }
+    await leaderboardService.setCachedLeaderboard(
+      mock_test_id,
+      rankedUserScores,
+    );
     res.status(200).json(rankedUserScores);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', details: error });
