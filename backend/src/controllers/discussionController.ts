@@ -103,20 +103,19 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
       );
 
       if (cachedMessages.length > 0) {
-        // Parse cached messages (JSON strings)
         const messages = cachedMessages.map(msg => JSON.parse(msg));
 
         // Return cached messages directly (you may want to enhance to include total count or next_page)
-        return res.status(200).json({
-          results: messages,
+        res.status(200).json({
+          results: messages.map(msg => JSON.parse(msg)),
           page: 1,
           total: messages.length, // Note: total count might be approximate
           next_page: messages.length === page_size ? 2 : null,
         });
+        return;
       }
-      // If no cache, fallback to DB (below)
     }
-    const discussions = paginate(
+    const discussions = await paginate<Discussion>(
       Discussion,
       {
         where: { mock_test_id: +mock_test_id },
@@ -134,11 +133,63 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
         page_size,
       },
     );
-
+    if (page === 1) {
+      const messagesToCache = discussions.results.map(msg =>
+        JSON.stringify(msg),
+      );
+      if (messagesToCache.length > 0) {
+        await redisClient.rPush(
+          `room:${mock_test_id}:messages`,
+          messagesToCache,
+        );
+      }
+    }
     res.status(200).json(discussions);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error', err });
   }
 };
+
+export async function batchInsertMessages() {
+  try {
+    // Get all rooms with pending messages
+    const rooms = await redisClient.sMembers('roomsWithPendingMessages');
+
+    for (const mock_test_id of rooms) {
+      const pendingKey = `room:${mock_test_id}:pendingMessages`;
+
+      // Fetch all pending messages for this room
+      const pendingMessages = await redisClient.lRange(pendingKey, 0, -1);
+      if (pendingMessages.length === 0) {
+        // If no pending messages, remove room from set
+        await redisClient.sRem('roomsWithPendingMessages', mock_test_id);
+        continue;
+      }
+
+      // Parse messages
+      const messagesToInsert = pendingMessages.map(msg => JSON.parse(msg));
+
+      // Bulk insert into DB
+      await Discussion.bulkCreate(
+        messagesToInsert.map(msg => ({
+          mock_test_id: msg.mock_test_id,
+          message: msg.message,
+          user_id: msg.user_id,
+          created_at: msg.created_at,
+        })),
+      );
+
+      // Delete all processed messages from Redis queue
+      await redisClient.del(pendingKey);
+
+      // Remove room from active rooms set (processed)
+      await redisClient.sRem('roomsWithPendingMessages', mock_test_id);
+    }
+  } catch {
+    // console.error('Batch insert error:', error);
+  }
+}
+
+// Run batch every 3 seconds
 
 export default ChatController;
