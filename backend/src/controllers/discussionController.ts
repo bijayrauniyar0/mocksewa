@@ -4,6 +4,8 @@ import Discussion from '../models/discussionModel';
 import User from '../models/userModels';
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
+import { paginate } from '../utils/paginate';
+import redisClient from '../config/redis';
 
 export class ChatController {
   static async handleJoinRoom(socket: Socket, mock_test_id: string) {
@@ -21,24 +23,31 @@ export class ChatController {
   ) {
     try {
       const user = socket.data.user;
-      const newMessage = await Discussion.create({
-        mock_test_id: +mock_test_id,
-        message,
-        user_id: +user.id,
-      });
       const userData = await User.findOne({
         where: { id: user.id },
         attributes: ['id', 'name', 'avatar'],
         raw: true,
       });
+
       const messagePayload = {
-        message: newMessage.message,
-        User: userData,
+        mock_test_id: +mock_test_id,
+        message,
+        user_id: +user.id,
         messageId,
-        status: 'delivered',
-        created_at: newMessage.created_at,
-        id: newMessage.id,
+        created_at: new Date().toISOString(),
+        User: userData,
       };
+      await redisClient.rPush(
+        `room:${mock_test_id}:pendingMessages`,
+        JSON.stringify(messagePayload),
+      );
+      await redisClient.sAdd('roomsWithPendingMessages', `${mock_test_id}`);
+      await redisClient.lPush(
+        `room:${mock_test_id}:messages`,
+        JSON.stringify(messagePayload),
+      );
+      await redisClient.lTrim(`room:${mock_test_id}:messages`, 0, 19);
+
       socket.to(mock_test_id).emit('receiveMessage', messagePayload);
       socket.emit('messageDelivered', messageId);
     } catch {
@@ -85,11 +94,31 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
   try {
     const { mock_test_id } = req.params;
     const page = parseInt(req.query.page as string) || 1;
-    const page_size = parseInt(req.query.page_size as string) || 20; // default 20 per page
-    const offset = (page - 1) * page_size;
+    const page_size = parseInt(req.query.page_size as string) || 20;
+    if (page === 1) {
+      const cachedMessages = await redisClient.lRange(
+        `room:${mock_test_id}:messages`,
+        0,
+        page_size - 1,
+      );
 
-    const { rows: discussions, count: total } =
-      await Discussion.findAndCountAll({
+      if (cachedMessages.length > 0) {
+        // Parse cached messages (JSON strings)
+        const messages = cachedMessages.map(msg => JSON.parse(msg));
+
+        // Return cached messages directly (you may want to enhance to include total count or next_page)
+        return res.status(200).json({
+          results: messages,
+          page: 1,
+          total: messages.length, // Note: total count might be approximate
+          next_page: messages.length === page_size ? 2 : null,
+        });
+      }
+      // If no cache, fallback to DB (below)
+    }
+    const discussions = paginate(
+      Discussion,
+      {
         where: { mock_test_id: +mock_test_id },
         attributes: ['message', 'created_at', 'id'],
         include: [
@@ -99,16 +128,14 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
           },
         ],
         order: [['created_at', 'DESC']],
-        offset,
-        limit: page_size,
-      });
+      },
+      {
+        page,
+        page_size,
+      },
+    );
 
-    res.status(200).json({
-      results: discussions,
-      page,
-      total,
-      next_page: total > page * page_size ? page + 1 : null,
-    });
+    res.status(200).json(discussions);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error', err });
   }
