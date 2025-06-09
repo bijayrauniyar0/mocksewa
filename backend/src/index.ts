@@ -1,35 +1,34 @@
 /* eslint-disable no-console */
 // src/index.ts
 import http from 'http';
-import { Server } from 'socket.io';
 import app from './server';
-import { CORS_ORIGIN, PORT } from './constants';
+import { PORT } from './constants';
 import sequelize from './config/database';
-import { initializeSocket } from './sockets';
 import { connectRedis } from './config/redis';
+import SocketService from './services/socket';
 
-const httpServer = http.createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: CORS_ORIGIN?.split(' '),
-    credentials: true,
-  },
-});
+async function init() {
+  const httpServer = http.createServer(app);
+  const socketService = new SocketService();
+  socketService.io.attach(httpServer);
 
-sequelize
-  .authenticate()
-  .then(() => {
-    return sequelize.sync({ force: false });
-  })
-  .then(async () => {
-    try {
-      await connectRedis();
-      initializeSocket(io);
-    } catch (err) {
-      console.error('Socket error:', err);
-    }
-    httpServer.listen(Number(PORT) || 9000, '0.0.0.0', () => {});
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err);
-  });
+  sequelize
+    .authenticate()
+    .then(() => {
+      return sequelize.sync({ force: false });
+    })
+    .then(async () => {
+      try {
+        await connectRedis();
+      } catch (err) {
+        console.error('Socket error:', err);
+      }
+      httpServer.listen(Number(PORT) || 9000, '0.0.0.0', () => {});
+    })
+    .catch(err => {
+      console.error('Unable to connect to the database:', err);
+    });
+  socketService.initListeners();
+}
+
+init();

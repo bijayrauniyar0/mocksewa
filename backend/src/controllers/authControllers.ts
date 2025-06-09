@@ -159,7 +159,7 @@ export const loginController = async (
       return;
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email }, raw: true });
     if (!user) {
       res.status(404).json({ message: 'User not found.' });
       return;
@@ -180,12 +180,14 @@ export const loginController = async (
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log(isPasswordValid);
     if (!isPasswordValid) {
       res.status(401).json({ message: 'Invalid credentials.' });
       return;
     }
 
     const token = generateToken({ id: user.id, email: user.email }, '86h');
+    console.log(token);
     if (!token) {
       res.status(500).json({ message: 'Error logging in.' });
       return;
@@ -198,7 +200,7 @@ export const loginController = async (
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     // eslint-disable-next-line no-unused-vars
-    const { password: _, ...userWithoutPassword } = user.toJSON();
+    const { password: _, ...userWithoutPassword } = user;
     res.status(200).json({
       message: 'Login successful',
       user: {
