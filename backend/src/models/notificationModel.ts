@@ -20,9 +20,23 @@ Notification.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    actor_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Optional, can be null if no specific actor is associated
+    },
     message: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'info', // Default type can be 'info', 'warning', 'error', etc.
+    },
+    meta: {
+      type: DataTypes.JSONB,
+      allowNull: true, // Optional metadata, can be null if not needed
+      defaultValue: {}, // Default to an empty object if no metadata is provided
     },
     is_read: {
       type: DataTypes.BOOLEAN,
