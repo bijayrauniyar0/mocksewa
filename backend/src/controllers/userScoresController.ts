@@ -12,6 +12,13 @@ import {
 import MockTest from '../models/mockTestModel';
 import redisClient from '../config/redis';
 
+interface CompareAndNotifyParams {
+  leaderboardService: LeaderboardService;
+  oldRanks: Rank[];
+  newRanks: Rank[];
+  test: string;
+  user: { id: number; name: string };
+}
 export class LeaderboardService {
   async getUserScores({
     mock_test_id,
@@ -87,14 +94,16 @@ export class LeaderboardService {
   async createSurpassedUserNotification(
     users: Rank[],
     test: string,
-    userName: string = 'Unknown',
+    actor: { id: number; name: string },
   ) {
     await Promise.all(
       users.map(async (user: Rank) => {
         await Notification.create({
           user_id: user.user_id,
-          message: `You have been surpassed by ${userName} in ${test} test.`,
-          is_read: false,
+          message: `You have been surpassed by ${actor.name} in ${test}.`,
+          type: 'leaderboard',
+          actor_id: actor.id,
+          meta: {},
         });
       }),
     );
@@ -119,30 +128,30 @@ const getUserRank = (ranks: Rank[], userId: number) => {
   return rank ? rank : ranks.length + 1;
 };
 
-const compareAndNotify = async (
-  leaderboardService: LeaderboardService,
-  oldRanks: Rank[],
-  newRanks: Rank[],
-  userId: number,
-  test: string,
-  userName: string,
-) => {
-  const previousRank = getUserRank(oldRanks, userId);
-  const newRank = getUserRank(newRanks, userId);
+const compareAndNotify = async ({
+  leaderboardService,
+  oldRanks,
+  newRanks,
+  test,
+  user,
+}: CompareAndNotifyParams) => {
+  const previousRank = getUserRank(oldRanks, user.id);
+  const newRank = getUserRank(newRanks, user.id);
+
+  // Users who were previously ranked worse but now surpassed by the user
   const surpassedUsers = oldRanks.filter(
     ({ rank, user_id }) =>
-      rank >= newRank && rank <= previousRank && user_id !== userId,
+      rank >= newRank && rank <= previousRank && user_id !== user.id,
   );
 
   if (surpassedUsers.length > 0) {
     await leaderboardService.createSurpassedUserNotification(
       surpassedUsers,
       test,
-      userName,
+      user,
     );
   }
 };
-
 export const createScoreEntry = async (req: Request, res: Response) => {
   try {
     const {
@@ -181,14 +190,16 @@ export const createScoreEntry = async (req: Request, res: Response) => {
     await leaderboardService.setCachedLeaderboard(mock_test_id, newRanks);
 
     const test = await MockTest.findByPk(mock_test_id);
-    await compareAndNotify(
+    await compareAndNotify({
       leaderboardService,
       oldRanks,
       newRanks,
-      user.id,
-      test?.title || 'Unknown',
-      user.name,
-    );
+      test: test?.title || '',
+      user: {
+        id: user.id,
+        name: user.name || 'Unknown',
+      },
+    });
 
     res.status(201).json({ message: 'Score added successfully' });
   } catch (error) {

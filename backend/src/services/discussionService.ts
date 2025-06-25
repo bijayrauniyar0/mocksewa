@@ -1,8 +1,23 @@
 import { Socket } from 'socket.io';
 import redisClient from '../config/redis';
 import Discussion from '../models/discussionModel';
+import MockTest from '../models/mockTestModel';
+import Notification from '../models/notificationModel';
+import User from '../models/userModels';
 
+interface IMention {
+  user_id: number;
+  label: string;
+  offset: number;
+  length: number;
+}
+interface IMessage {
+  text: string;
+  mentions: IMention[];
+}
 export class DiscussionService {
+  private static batchInsertTimeout: NodeJS.Timeout | null = null;
+
   static async handleJoinRoom(socket: Socket, room: string) {
     try {
       socket.join(room);
@@ -26,34 +41,39 @@ export class DiscussionService {
         messageId,
         created_at: new Date().toISOString(),
       };
-      await Discussion.create({
-        mock_test_id: +mock_test_id,
-        message,
-        user_id: +user.id,
-        created_at: new Date(),
-      });
+
+      // await Discussion.create({
+      //   mock_test_id: +mock_test_id,
+      //   message,
+      //   user_id: +user.id,
+      //   created_at: new Date(),
+      // });
+
       await redisClient.rPush(
         `discussion:${mock_test_id}:pendingMessages`,
         JSON.stringify(messagePayload),
       );
+
       await redisClient.lPush(
         `discussion:${mock_test_id}:messages`,
         JSON.stringify(messagePayload),
       );
+
+      // <-- Add the room to the set tracking rooms with pending messages
+      await redisClient.sAdd('roomsWithPendingMessages', mock_test_id);
+
       socket.to(room_id.toString()).emit('receiveMessage', messagePayload);
       socket.emit('messageDelivered', messageId);
+      if (this.batchInsertTimeout) {
+        clearTimeout(this.batchInsertTimeout);
+      }
+      this.batchInsertTimeout = setTimeout(() => {
+        this.batchInsertMessages();
+        this.batchInsertTimeout = null;
+      }, 2000);
     } catch {
       socket.emit('messageError', messageId);
     }
-  }
-  static handleDisconnect(socket: Socket) {
-    // eslint-disable-next-line no-console
-    console.log(`User disconnected: ${socket.id}`, socket.data.user.id);
-  }
-  static handleError(socket: Socket, error: any) {
-    // eslint-disable-next-line no-console
-    console.error(`Socket error: ${error}`);
-    socket.emit('error', 'An error occurred');
   }
   static async batchInsertMessages() {
     try {
@@ -61,7 +81,7 @@ export class DiscussionService {
       const rooms = await redisClient.sMembers('roomsWithPendingMessages');
 
       for (const mock_test_id of rooms) {
-        const pendingKey = `room:${mock_test_id}:pendingMessages`;
+        const pendingKey = `discussion:${mock_test_id}:pendingMessages`;
 
         // Fetch all pending messages for this room
         const pendingMessages = await redisClient.lRange(pendingKey, 0, -1);
@@ -83,7 +103,21 @@ export class DiscussionService {
             created_at: msg.created_at,
           })),
         );
-
+        try {
+          await Promise.all(
+            messagesToInsert.map(
+              async msg =>
+                await DiscussionService.notifyMentions(
+                  msg.mock_test_id.toString(),
+                  msg.user_id,
+                  msg.message,
+                ),
+            ),
+          );
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error notifying mentions:', error);
+        }
         // Delete all processed messages from Redis queue
         await redisClient.del(pendingKey);
 
@@ -92,6 +126,51 @@ export class DiscussionService {
       }
     } catch {
       // console.error('Batch insert error:', error);
+    }
+  }
+  static handleDisconnect(socket: Socket) {
+    // eslint-disable-next-line no-console
+    console.log(`User disconnected: ${socket.id}`, socket.data.user.id);
+  }
+  static handleError(socket: Socket, error: any) {
+    // eslint-disable-next-line no-console
+    console.error(`Socket error: ${error}`);
+    socket.emit('error', 'An error occurred');
+  }
+
+  static async notifyMentions(
+    mock_test_id: string,
+    actor_id: number,
+    message: IMessage,
+  ) {
+    const mockTest = await MockTest.findOne({
+      where: { id: +mock_test_id },
+      attributes: ['title', 'stream_id'],
+    });
+    const actorName = await User.findOne({
+      where: { id: actor_id },
+      attributes: ['name'],
+    });
+
+    const uniqueUserIds = Array.from(
+      new Set(message.mentions.map(m => m.user_id)),
+    );
+
+    const notifications = uniqueUserIds.map(userId => ({
+      user_id: userId,
+      actor_id,
+      message: `You were mentioned by ${actorName?.name} in the discussion of "${mockTest?.title}"`,
+      type: 'discussion',
+      meta: {
+        mock_test_id: +mock_test_id,
+        stream_id: mockTest?.stream_id || null,
+      },
+    }));
+    Notification.bulkCreate(notifications, {
+      ignoreDuplicates: true,
+    });
+    if (!mockTest) {
+      return;
     }
   }
 }
