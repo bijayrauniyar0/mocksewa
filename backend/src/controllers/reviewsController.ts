@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
-// import { uploadFileToDrive } from '../services/driveService';
 import Review from '../models/reviewsModel';
 import User from '../models/userModels';
 import MockTest from '../models/mockTestModel';
 import Stream from '../models/streamModels';
 import { paginate } from '../utils/paginate';
-// import { AzureBlobService } from '../services/azureBlobService';
 
 export const createReview = async (
   req: Request,
@@ -92,7 +90,6 @@ export const getReviewsByMockTestId = async (
         page_size: +page_size,
       },
     );
-
 
     res.status(200).json(reviews);
   } catch (error) {
