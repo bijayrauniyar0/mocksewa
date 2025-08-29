@@ -7,14 +7,6 @@ services:
       - "9000:9000" # Exposes the backend API
     volumes:
       - ./backend:/app # Syncs local backend directory with the container
-    # environment:
-    #   JWT_SECRET: ${JWT_SECRET}
-    #   PORT: ${PORT}
-    #   DB_HOST: ${DB_HOST}
-    #   DB_PORT: ${DB_PORT}
-    #   DB_USER: ${DB_USER}
-    #   DB_PASSWORD: ${DB_PASSWORD}
-    #   DB_NAME: ${DB_NAME}
     command: ["yarn", "dev"]
     depends_on:
       - db
@@ -22,20 +14,6 @@ services:
     networks:
       - app-network # Ensure the backend is on the app-network
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3033:3033" # Exposes the frontend
-  #   volumes:
-  #     - ./frontend:/app
-  #   environment:
-  #     - NODE_ENV=development
-  #   networks:
-  #     - app-network # Ensure the frontend is on the app-network
-  #   depends_on:
-  #     - backend
   redis:
     image: redis:latest
     container_name: redis
@@ -46,18 +24,7 @@ services:
     restart: always
     networks:
       - app-network # Ensure Redis is on the app-network
-  redis-insight:
-    image: redis/redisinsight:latest
-    container_name: redis-insight
-    ports:
-      - "5540:5540" 
-    depends_on:
-      - redis
-    restart: always
-    volumes:
-      - redisinsight_data:/db
-    networks:
-      - app-network # Ensure RedisInsight is on the app-network
+
   db:
     image: postgres:15
     container_name: hamrocoders-sql-db
@@ -71,18 +38,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network # Ensure the database is on the app-network
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   container_name: pgadmin
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL} # Set pgAdmin email (you can change this)
-  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD} # Set pgAdmin password (you can change this)
-  #   ports:
-  #     - "5050:80" # Access pgAdmin at localhost:5050
-  #   volumes:
-  #     - pgadmin_data:/var/lib/pgadmin
-  #   networks:
-  #     - app-network
 
 networks:
   app-network:
@@ -90,6 +45,4 @@ networks:
 
 volumes:
   postgres_data:
-  redisinsight_data:
   redis_data:
-  # pgadmin_data:
