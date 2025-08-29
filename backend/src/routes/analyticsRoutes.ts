@@ -1,11 +1,15 @@
 import {
+  getHistorySessions,
   getPerformanceDetails,
   getPerformanceTrend,
+  getRadarMetrics,
   getRecentSessions,
+  getUserScoresByMockTest,
   getUserStats,
-} from '@Controllers/userStatsController';
+  getUserStatsById,
+} from '../controllers/analyticsController';
 import express from 'express';
-import { authenticate } from 'src/middlewares/authenticate';
+import { authenticate } from '../middlewares/authenticate';
 
 const analyticsRouter = express.Router();
 
@@ -17,5 +21,9 @@ analyticsRouter.get(
   getPerformanceDetails,
 );
 analyticsRouter.get('/performance-trend/', authenticate, getPerformanceTrend);
+analyticsRouter.get('/radar-metrics/:user_id', getRadarMetrics);
+analyticsRouter.get('/user-scores/:user_id', getUserScoresByMockTest);
+analyticsRouter.get('/user-stats/:user_id', getUserStatsById);
+analyticsRouter.get('/history-sessions/:user_id', getHistorySessions);
 
 export default analyticsRouter;

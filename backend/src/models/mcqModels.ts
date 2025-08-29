@@ -1,14 +1,15 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
-import Subject from './subjectsModels';
+import Test from './mockTestModel';
+import Section from './sectionModel';
 
 class MCQ extends Model {
   public id!: number;
   public question!: string;
-  public subject_id!: string;
+  public section_id!: string;
   public options!: JSON;
   public answer!: string;
-  public Subject?: Subject;
+  public Test?: Test;
 }
 
 MCQ.init(
@@ -18,7 +19,7 @@ MCQ.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    subject_id: {
+    section_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
@@ -42,14 +43,14 @@ MCQ.init(
   },
 );
 
-Subject.hasMany(MCQ, {
-  foreignKey: 'subject_id',
+Section.hasMany(MCQ, {
+  foreignKey: 'section_id',
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE',
 });
 
-MCQ.belongsTo(Subject, {
-  foreignKey: 'subject_id',
+MCQ.belongsTo(Section, {
+  foreignKey: 'section_id',
   targetKey: 'id',
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE',

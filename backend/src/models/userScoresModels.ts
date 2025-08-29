@@ -1,18 +1,23 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
 import User from './userModels';
-import Subject from './subjectsModels';
+import Test from './mockTestModel';
+import MockTest from './mockTestModel';
 
 class UserScores extends Model {
   public id!: number;
-  public User!: { name: string; id: number };
+  public User!: User;
   public user_id!: number;
   public score!: number;
-  public subject_id!: string;
-  public subject!: { title: string; id: number };
-  public mode!: 'practice' | 'ranked';
+  public mock_test_id!: string;
+  public question_count!: number;
+  public time_limit!: number;
+  public full_marks!: number;
+  public section_scores!: JSON;
+  public MockTest!: MockTest;
   public elapsed_time!: number;
   public readonly created_at!: Date;
+  public unanswered_questions!: number;
 }
 
 UserScores.init(
@@ -26,18 +31,38 @@ UserScores.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    subject_id: {
+    mock_test_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    mode: {
-      type: DataTypes.ENUM('practice', 'ranked'),
-      allowNull: false,
-      defaultValue: 'practice',
     },
     score: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+    question_count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    full_marks: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    time_limit: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    section_scores: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: {},
+    },
+    unanswered_questions: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
     elapsed_time: {
       type: DataTypes.INTEGER,
@@ -54,10 +79,15 @@ UserScores.init(
   },
 );
 
-
-UserScores.belongsTo(Subject, {
-  foreignKey: 'subject_id',
+UserScores.belongsTo(Test, {
+  foreignKey: 'mock_test_id',
   targetKey: 'id',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+});
+
+Test.hasMany(UserScores, {
+  foreignKey: 'mock_test_id',
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE',
 });

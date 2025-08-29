@@ -9,8 +9,12 @@ class User extends Model {
   public email!: string;
   public password!: string;
   public number!: string;
+  public bio!: string;
   public avatar!: string;
   public verified!: boolean;
+  public oauth_provider!: string;
+  public blob_name!: string;
+  public created_at!: Date;
 }
 
 User.init(
@@ -31,17 +35,28 @@ User.init(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     number: {
       type: DataTypes.STRING,
       allowNull: true,
-      unique: true,
+    },
+    bio: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     avatar: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    blob_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    oauth_provider: {
+      type: DataTypes.ENUM('local', 'google'),
       allowNull: false,
-      defaultValue: 'bear',
+      defaultValue: 'local',
     },
     verified: {
       type: DataTypes.BOOLEAN,
@@ -51,7 +66,6 @@ User.init(
   },
   {
     sequelize,
-    modelName: 'User',
     tableName: 'users',
     timestamps: true,
     updatedAt: 'updated_at',

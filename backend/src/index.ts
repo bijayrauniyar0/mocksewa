@@ -1,36 +1,34 @@
-// src/server.ts
-import express from 'express';
-import userRoutes from '@Routes/userRoutes';
+/* eslint-disable no-console */
+// src/index.ts
+import http from 'http';
+import app from './server';
+import { PORT } from './constants';
 import sequelize from './config/database';
-import cors from 'cors';
-import mcqRouter from '@Routes/mcqsRoutes';
-import userScoresRouter from '@Routes/leaderboardRoutes';
-import courseRouter from '@Routes/courseRoutes';
-import notificationRouter from '@Routes/notificationRoutes';
-import analyticsRouter from '@Routes/analyticsRoutes';
+import { connectRedis } from './config/redis';
+import SocketService from './services/socket';
 
-const PORT = process.env.PORT || 9000;
+async function init() {
+  const httpServer = http.createServer(app);
+  const socketService = new SocketService();
+  socketService.io.attach(httpServer);
 
-const app = express();
-app.use(cors());
-app.use(express.json()); // Middleware to parse JSON requests
+  sequelize
+    .authenticate()
+    .then(() => {
+      return sequelize.sync({ force: false });
+    })
+    .then(async () => {
+      try {
+        await connectRedis();
+      } catch (err) {
+        console.error('Socket error:', err);
+      }
+      httpServer.listen(Number(PORT) || 9000, '0.0.0.0', () => {});
+    })
+    .catch(err => {
+      console.error('Unable to connect to the database:', err);
+    });
+  socketService.initListeners();
+}
 
-app.use('/api/user', userRoutes);
-app.use('/api/mcq', mcqRouter);
-app.use('/api/courses', courseRouter);
-app.use('/api/leaderboard', userScoresRouter);
-app.use('/api/notification', notificationRouter);
-app.use('/api/analytics', analyticsRouter);
-
-sequelize
-  .authenticate()
-  .then(() => {
-    return sequelize.sync({ force: false });
-  })
-  .then(() => {
-    app.listen(Number(PORT) || 9000, '0.0.0.0', () => {});
-  })
-  .catch(err => {
-    // eslint-disable-next-line no-console
-    console.error('Unable to connect to the database:', err);
-  });
+init();

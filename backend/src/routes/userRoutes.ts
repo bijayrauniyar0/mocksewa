@@ -2,27 +2,31 @@
 import express from 'express';
 import {
   getAllUsers,
-  createUser,
   updateUser,
   deleteUser,
-  loginController,
-  checkLogin,
   getUserProfile,
-  verifyEmail,
+  getPublicUserProfileById,
 } from '../controllers/userController';
-import { authenticate } from 'src/middlewares/authenticate';
+import { authenticate } from '../middlewares/authenticate/index';
+import { getMockTestsTakenByUser } from '../controllers/userScoresController';
+import multer from 'multer';
 
 const userRouter = express.Router();
 
-userRouter.post('/signup/', createUser);
-userRouter.post('/login/', loginController);
-userRouter.get('/check-login/', authenticate, checkLogin);
-userRouter.get('/profile/', authenticate, getUserProfile);
-userRouter.get('/', authenticate, getAllUsers);
-userRouter.patch('/update/profile/', authenticate, updateUser);
-userRouter.patch('/change-password/', authenticate, updateUser);
-userRouter.delete('/:id/', authenticate, deleteUser);
-// @ts-ignore
-userRouter.get('/verify-email', verifyEmail);
+const upload = multer({
+  dest: '/',
+  limits: { fileSize: 1024 * 1024 },
+});
+
+// Authenticated user routes
+userRouter.get('/profile', authenticate, getUserProfile);
+userRouter.delete('/profile', authenticate, deleteUser);
+userRouter.patch('/profile', authenticate, upload.single('avatar'), updateUser);
+userRouter.patch('/profile/change-password', authenticate, updateUser);
+userRouter.get('/profile/mock-tests', authenticate, getMockTestsTakenByUser);
+
+// Public or admin routes
+userRouter.get('/:user_id', getPublicUserProfileById);
+userRouter.get('/', getAllUsers); // Consider adding admin middleware if needed
 
 export default userRouter;

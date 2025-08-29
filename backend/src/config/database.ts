@@ -1,19 +1,16 @@
 // /config/database.js
 import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
 
-dotenv.config();
+import pg from 'pg';
+import { DB_CONNECTION } from '../constants';
 
-// Ensure 'port' is correctly converted to a number
-const sequelize = new Sequelize({
-  host: process.env.DB_HOST || 'hamrocoders-sql-db',
-  port: parseInt(process.env.DB_PORT || '5432', 10), // Convert to number here
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+if (!DB_CONNECTION) {
+  throw new Error('Environment variable DB_CONNECTION is not set');
+}
+const sequelize = new Sequelize(DB_CONNECTION || '', {
   dialect: 'postgres',
-  timezone: '+05:45', // Nepal Time!
-//   logging: false, // Turn off logging for production
+  timezone: '+05:45',
+  dialectModule: pg,
 });
 
 export default sequelize;

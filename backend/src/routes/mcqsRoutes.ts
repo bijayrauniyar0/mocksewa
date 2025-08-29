@@ -1,11 +1,10 @@
-import { getMCQs, getMCQsAnswers } from '@Controllers/mcqsController';
+import { getMCQs, getMCQsAnswers } from '../controllers/mcqsController';
 import express from 'express';
-import { authenticate } from 'src/middlewares/authenticate';
+import { authenticate } from '../middlewares/authenticate';
 
 const mcqRouter = express.Router();
 
-mcqRouter.get('/questions/:subject_id/', authenticate, getMCQs);
-mcqRouter.get('/answers/:subject_id/', getMCQsAnswers);
-
+mcqRouter.get('/questions/:test_id/', authenticate, getMCQs);
+mcqRouter.get('/answers/', getMCQsAnswers);
 
 export default mcqRouter;
