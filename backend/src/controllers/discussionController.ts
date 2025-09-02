@@ -51,7 +51,7 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
 
         // Return cached messages directly (you may want to enhance to include total count or next_page)
         res.status(200).json({
-          results: messages.map(msg => JSON.parse(msg)),
+          results: messages,
           page: 1,
           total: messages.length, // Note: total count might be approximate
           next_page: messages.length === page_size ? 2 : null,
