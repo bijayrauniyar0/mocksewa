@@ -147,10 +147,16 @@ export class DiscussionService {
       where: { id: +mock_test_id },
       attributes: ['title', 'stream_id'],
     });
+    if (!mockTest) {
+      return;
+    }
     const actorName = await User.findOne({
       where: { id: actor_id },
       attributes: ['name'],
     });
+    if (!actorName) {
+      return;
+    }
 
     const uniqueUserIds = Array.from(
       new Set(message.mentions.map(m => m.user_id)),
@@ -169,8 +175,5 @@ export class DiscussionService {
     Notification.bulkCreate(notifications, {
       ignoreDuplicates: true,
     });
-    if (!mockTest) {
-      return;
-    }
   }
 }

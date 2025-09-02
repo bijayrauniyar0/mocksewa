@@ -4,7 +4,7 @@ import { getUsersInChat, getHistoryDiscussions } from '../controllers/discussion
 
 const discussionRouter = express.Router();
 
-discussionRouter.get('/:mock_test_id', authenticate, getUsersInChat);
+discussionRouter.get('/users/:mock_test_id', authenticate, getUsersInChat);
 discussionRouter.get('/history/:mock_test_id', authenticate, getHistoryDiscussions);
 
 export default discussionRouter;

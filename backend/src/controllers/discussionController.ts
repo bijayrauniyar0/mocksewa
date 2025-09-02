@@ -1,33 +1,44 @@
 // src/controllers/chatController.ts
 import Discussion from '../models/discussionModel';
 import { Request, Response } from 'express';
-import { QueryTypes } from 'sequelize';
 import { paginate } from '../utils/paginate';
 import redisClient from '../config/redis';
 import sequelize from '../config/database';
 import User from '../models/userModels';
-
+import { Op } from 'sequelize';
 export const getUsersInChat = async (req: Request, res: Response) => {
   try {
     const { mock_test_id } = req.params;
+    const redisKey = `mock_test:${mock_test_id}:users`;
 
-    const results = await sequelize.query(
-      `
-      SELECT u.id, u.name, u.avatar, MAX(d."created_at") as last_active
-      FROM users u
-      INNER JOIN discussions d ON d.user_id = u.id
-      WHERE d.mock_test_id = :mock_test_id AND u.id != :userId
-      GROUP BY u.id
-      ORDER BY last_active DESC
-      `,
-      {
-        replacements: {
-          mock_test_id: +mock_test_id,
-          userId: req.user?.id,
+    // Try to get from cache
+    const cachedUsers = await redisClient.get(redisKey);
+    if (cachedUsers) {
+      res.status(200).json(JSON.parse(cachedUsers));
+      return;
+    }
+
+    // Fetch from DB
+    const results = await User.findAll({
+      attributes: ['id', 'name', 'avatar'],
+      include: [
+        {
+          model: Discussion,
+          attributes: [],
+          where: { mock_test_id: +mock_test_id },
         },
-        type: QueryTypes.SELECT,
-      },
-    );
+      ],
+      where: { id: { [Op.ne]: req.user?.id } },
+      group: ['User.id'],
+      order: [
+        [sequelize.fn('MAX', sequelize.col('Discussions.created_at')), 'DESC'],
+      ],
+    });
+
+    // Cache in Redis as single JSON string
+    if (results.length > 0) {
+      await redisClient.set(redisKey, JSON.stringify(results), { EX: 3600 }); // 1 hour TTL
+    }
 
     res.status(200).json(results);
   } catch (err) {
@@ -65,12 +76,6 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
         where: { mock_test_id: +mock_test_id },
         attributes: ['message', 'created_at', 'id', 'user_id'],
         order: [['created_at', 'DESC']],
-        include: [
-          {
-            model: User,
-            attributes: ['name', 'avatar'],
-          },
-        ],
       },
       {
         page,
@@ -93,4 +98,3 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error', err });
   }
 };
-
