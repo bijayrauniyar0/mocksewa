@@ -42,13 +42,6 @@ export class DiscussionService {
         created_at: new Date().toISOString(),
       };
 
-      // await Discussion.create({
-      //   mock_test_id: +mock_test_id,
-      //   message,
-      //   user_id: +user.id,
-      //   created_at: new Date(),
-      // });
-
       await redisClient.rPush(
         `discussion:${mock_test_id}:pendingMessages`,
         JSON.stringify(messagePayload),
@@ -103,6 +96,7 @@ export class DiscussionService {
             created_at: msg.created_at,
           })),
         );
+        await redisClient.expire(`room:${mock_test_id}:messages`, 0);
         try {
           await Promise.all(
             messagesToInsert.map(
