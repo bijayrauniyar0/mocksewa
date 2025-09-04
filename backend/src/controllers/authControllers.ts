@@ -180,14 +180,12 @@ export const loginController = async (
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log(isPasswordValid);
     if (!isPasswordValid) {
       res.status(401).json({ message: 'Invalid credentials.' });
       return;
     }
 
     const token = generateToken({ id: user.id, email: user.email }, '86h');
-    console.log(token);
     if (!token) {
       res.status(500).json({ message: 'Error logging in.' });
       return;
