@@ -464,7 +464,8 @@ export const getPerformanceDetails = async (
   const { user } = req;
 
   if (!mock_test_id) {
-    return res.status(400).json({ message: 'Mock test id is required' });
+    res.status(400).json({ message: 'Mock test id is required' });
+    return; 
   }
 
   try {
