@@ -2,24 +2,52 @@ import { Request, Response } from 'express';
 import Bookmark from '../models/bookmarksModel';
 import MockTest from '../models/mockTestModel';
 import Stream from '../models/streamModels';
+import { Sequelize } from 'sequelize';
+import { Op } from '@sequelize/core';
 
 export const getAllBookmarks = async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const user_id = req.user.id;
+    const { search } = req.query;
     const bookmarks = await Bookmark.findAll({
-      where: { user_id: userId },
+      attributes: [
+        'id',
+        'mock_test_id',
+        [Sequelize.col('MockTest.title'), 'title'],
+        [Sequelize.col('MockTest.time_limit'), 'time_limit'],
+        [Sequelize.col('MockTest->Stream.name'), 'stream_name'],
+        [Sequelize.col('MockTest.stream_id'), 'stream_id'],
+        [Sequelize.col('MockTest.question_count'), 'question_count'],
+      ],
       include: [
         {
           model: MockTest,
-          attributes: ['id', 'title', 'time_limit'],
+          attributes: [],
           include: [
             {
               model: Stream,
-              attributes: ['name'],
+              attributes: [],
             },
           ],
         },
       ],
+      where: {
+        user_id,
+        ...(search
+          ? {
+              [Op.or]: [
+                { '$MockTest.title$': { [Op.iLike]: `%${search}%` } },
+                {
+                  '$MockTest->Stream.name$': {
+                    [Op.iLike]: `%${search}%`,
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      raw: true,
+      nest: false,
     });
 
     if (!bookmarks) {
@@ -27,15 +55,7 @@ export const getAllBookmarks = async (req: Request, res: Response) => {
       return;
     }
 
-    const formattedBookmarks = bookmarks.map(bookmark => ({
-      id: bookmark.id,
-      mock_test_id: bookmark.mock_test_id,
-      title: bookmark.MockTest.title,
-      time_limit: bookmark.MockTest.time_limit,
-      stream_name: bookmark.MockTest.Stream.name,
-    }));
-
-    res.status(200).json(formattedBookmarks);
+    res.status(200).json(bookmarks);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error });
   }

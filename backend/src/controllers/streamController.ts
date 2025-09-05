@@ -140,16 +140,6 @@ export const getMockTestsListByStream = async (req: Request, res: Response) => {
       nest: false,
     });
 
-    // const updatedTests = tests.map(t => ({
-    //   id: t.id,
-    //   stream_id: t.stream_id,
-    //   title: t.title,
-    //   question_count: t.question_count,
-    //   time_limit: t.time_limit,
-    //   students_count: Number(t.students_count),
-    //   bookmark: !!t['Bookmarks.id'],
-    //   stream_name: t['Stream.name'],
-    // }));
     res.status(200).json(tests);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error });
