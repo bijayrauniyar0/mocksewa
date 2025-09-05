@@ -41,7 +41,19 @@ export class DiscussionService {
         messageId,
         created_at: new Date().toISOString(),
       };
+      const userRecordCount = await Discussion.count({
+        where: {
+          mock_test_id: +mock_test_id,
+          user_id: +user.id,
+        },
+      });
+      const isUserHasRecord = userRecordCount > 0;
 
+      if (!isUserHasRecord) {
+        const key = `mocktest:${mock_test_id}:users`;
+        await redisClient.hset(key, user.id.toString(), JSON.stringify(user));
+        await redisClient.expire(key, 3600); // 1 hour TTL
+      }
       await redisClient.rPush(
         `discussion:${mock_test_id}:pendingMessages`,
         JSON.stringify(messagePayload),

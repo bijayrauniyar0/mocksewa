@@ -5,21 +5,32 @@ import { paginate } from '../utils/paginate';
 import redisClient from '../config/redis';
 import sequelize from '../config/database';
 import User from '../models/userModels';
-import { Op } from 'sequelize';
 export const getUsersInChat = async (req: Request, res: Response) => {
   try {
     const { mock_test_id } = req.params;
     const redisKey = `mock_test:${mock_test_id}:users`;
+    const { user } = req;
 
     // Try to get from cache
-    const cachedUsers = await redisClient.get(redisKey);
-    if (cachedUsers) {
-      res.status(200).json(JSON.parse(cachedUsers));
-      return;
+
+    const cachedData = await redisClient.hGetAll(redisKey);
+    const users: User[] = [];
+    if (cachedData) {
+      Object.values(cachedData).forEach(u => {
+        const parsedUser = JSON.parse(u);
+        if (parsedUser.id !== user.id) {
+          users.push(parsedUser);
+        }
+      });
+      if (users.length > 0) {
+        res.status(200).json(users);
+        return;
+      }
     }
 
-    // Fetch from DB
-    const results = await User.findAll({
+    // return users.filter(u => u.id !== currentUserId);
+
+    const usersList = await User.findAll({
       attributes: ['id', 'name', 'avatar'],
       include: [
         {
@@ -28,19 +39,23 @@ export const getUsersInChat = async (req: Request, res: Response) => {
           where: { mock_test_id: +mock_test_id },
         },
       ],
-      where: { id: { [Op.ne]: req.user?.id } },
       group: ['User.id'],
       order: [
         [sequelize.fn('MAX', sequelize.col('Discussions.created_at')), 'DESC'],
       ],
     });
 
-    // Cache in Redis as single JSON string
-    if (results.length > 0) {
-      await redisClient.set(redisKey, JSON.stringify(results), { EX: 3600 }); // 1 hour TTL
+    if (usersList.length > 0) {
+      const hashData: Record<string, string> = {};
+      usersList.forEach(u => {
+        hashData[u.id.toString()] = JSON.stringify(u);
+      });
+
+      await redisClient.hSet(redisKey, hashData);
+      await redisClient.expire(redisKey, 3600); // 1 hour TTL
     }
 
-    res.status(200).json(results);
+    res.status(200).json(usersList);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error', err });
   }
