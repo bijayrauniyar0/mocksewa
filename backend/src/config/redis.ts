@@ -1,7 +1,8 @@
 import { createClient } from 'redis';
+import { REDIS_URL } from '../constants';
 
 const redisClient = createClient({
-  url: 'redis://redis:6379',
+  url: REDIS_URL || 'redis://redis:6379',
 });
 
 export async function connectRedis() {

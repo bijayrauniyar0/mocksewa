@@ -24,10 +24,11 @@ export const AZURE_STORAGE_ACCOUNT_KEY = process.env.AZURE_STORAGE_ACCOUNT_KEY;
 export const AZURE_STORAGE_CONNECTION_STRING =
   process.env.AZURE_STORAGE_CONNECTION_STRING || '';
 export const CORS_ORIGIN = process.env.CORS_ORIGIN;
+export const REDIS_URL = process.env.REDIS_URL;
 
 export const CORS = {
   cors: {
-    origin: CORS_ORIGIN?.split(' '),
+    origin: CORS_ORIGIN,
     credentials: true,
   },
 };

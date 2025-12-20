@@ -41,14 +41,19 @@ export class DiscussionService {
         messageId,
         created_at: new Date().toISOString(),
       };
+      const userRecordCount = await Discussion.count({
+        where: {
+          mock_test_id: +mock_test_id,
+          user_id: +user.id,
+        },
+      });
+      const isUserHasRecord = userRecordCount > 0;
 
-      // await Discussion.create({
-      //   mock_test_id: +mock_test_id,
-      //   message,
-      //   user_id: +user.id,
-      //   created_at: new Date(),
-      // });
-
+      if (!isUserHasRecord) {
+        const key = `mocktest:${mock_test_id}:users`;
+        await redisClient.hset(key, user.id.toString(), JSON.stringify(user));
+        await redisClient.expire(key, 3600); // 1 hour TTL
+      }
       await redisClient.rPush(
         `discussion:${mock_test_id}:pendingMessages`,
         JSON.stringify(messagePayload),
@@ -103,6 +108,7 @@ export class DiscussionService {
             created_at: msg.created_at,
           })),
         );
+        await redisClient.expire(`room:${mock_test_id}:messages`, 0);
         try {
           await Promise.all(
             messagesToInsert.map(
@@ -147,10 +153,16 @@ export class DiscussionService {
       where: { id: +mock_test_id },
       attributes: ['title', 'stream_id'],
     });
+    if (!mockTest) {
+      return;
+    }
     const actorName = await User.findOne({
       where: { id: actor_id },
       attributes: ['name'],
     });
+    if (!actorName) {
+      return;
+    }
 
     const uniqueUserIds = Array.from(
       new Set(message.mentions.map(m => m.user_id)),
@@ -169,8 +181,5 @@ export class DiscussionService {
     Notification.bulkCreate(notifications, {
       ignoreDuplicates: true,
     });
-    if (!mockTest) {
-      return;
-    }
   }
 }

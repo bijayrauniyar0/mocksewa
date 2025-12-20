@@ -1,35 +1,61 @@
 // src/controllers/chatController.ts
 import Discussion from '../models/discussionModel';
 import { Request, Response } from 'express';
-import { QueryTypes } from 'sequelize';
 import { paginate } from '../utils/paginate';
 import redisClient from '../config/redis';
 import sequelize from '../config/database';
 import User from '../models/userModels';
-
 export const getUsersInChat = async (req: Request, res: Response) => {
   try {
     const { mock_test_id } = req.params;
+    const redisKey = `mock_test:${mock_test_id}:users`;
+    const { user } = req;
 
-    const results = await sequelize.query(
-      `
-      SELECT u.id, u.name, u.avatar, MAX(d."created_at") as last_active
-      FROM users u
-      INNER JOIN discussions d ON d.user_id = u.id
-      WHERE d.mock_test_id = :mock_test_id AND u.id != :userId
-      GROUP BY u.id
-      ORDER BY last_active DESC
-      `,
-      {
-        replacements: {
-          mock_test_id: +mock_test_id,
-          userId: req.user?.id,
+    // Try to get from cache
+
+    const cachedData = await redisClient.hGetAll(redisKey);
+    const users: User[] = [];
+    if (cachedData) {
+      Object.values(cachedData).forEach(u => {
+        const parsedUser = JSON.parse(u);
+        if (parsedUser.id !== user.id) {
+          users.push(parsedUser);
+        }
+      });
+      if (users.length > 0) {
+        res.status(200).json(users);
+        return;
+      }
+    }
+
+    // return users.filter(u => u.id !== currentUserId);
+
+    const usersList = await User.findAll({
+      attributes: ['id', 'name', 'avatar'],
+      include: [
+        {
+          model: Discussion,
+          attributes: [],
+          where: { mock_test_id: +mock_test_id },
         },
-        type: QueryTypes.SELECT,
-      },
-    );
+      ],
+      group: ['User.id'],
+      order: [
+        [sequelize.fn('MAX', sequelize.col('Discussions.created_at')), 'DESC'],
+      ],
+    });
 
-    res.status(200).json(results);
+    if (usersList.length > 0) {
+      const hashData: Record<string, string> = {};
+      usersList.forEach(u => {
+        hashData[u.id.toString()] = JSON.stringify(u);
+      });
+
+      await redisClient.hSet(redisKey, hashData);
+      await redisClient.expire(redisKey, 3600); // 1 hour TTL
+    }
+
+    res.status(200).json(usersList);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error', err });
   }
@@ -51,7 +77,7 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
 
         // Return cached messages directly (you may want to enhance to include total count or next_page)
         res.status(200).json({
-          results: messages.map(msg => JSON.parse(msg)),
+          results: messages,
           page: 1,
           total: messages.length, // Note: total count might be approximate
           next_page: messages.length === page_size ? 2 : null,
@@ -65,12 +91,6 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
         where: { mock_test_id: +mock_test_id },
         attributes: ['message', 'created_at', 'id', 'user_id'],
         order: [['created_at', 'DESC']],
-        include: [
-          {
-            model: User,
-            attributes: ['name', 'avatar'],
-          },
-        ],
       },
       {
         page,
@@ -93,4 +113,3 @@ export const getHistoryDiscussions = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error', err });
   }
 };
-

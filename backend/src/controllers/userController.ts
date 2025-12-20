@@ -81,6 +81,7 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
           res.status(500).json({
             message: 'Error updating profile picture',
           });
+          return;
         }
       }
 

@@ -5,6 +5,7 @@ import UserScores from '../models/userScoresModels';
 import MockTest from '../models/mockTestModel';
 import Bookmark from '../models/bookmarksModel';
 import Section from '../models/sectionModel';
+import { Sequelize } from 'sequelize';
 
 export class StreamsService {
   async getStreams() {
@@ -94,40 +95,52 @@ export const getStreams = async (req: Request, res: Response) => {
 export const getMockTestsListByStream = async (req: Request, res: Response) => {
   const { stream_id } = req.params;
   try {
-    const streamsService = new StreamsService();
-    const tests = await streamsService.getTestsList(+stream_id);
-    const updatedTests = await Promise.all(
-      tests.map(async test => {
-        const studentsCount = await UserScores.count({
-          distinct: true,
-          col: 'user_id',
-          include: [
-            {
-              model: Test,
-              where: { id: test.id },
-              attributes: [],
-            },
-          ],
-        });
-        let bookmark = false;
-        if (req.user) {
-          const bookmarks = await Bookmark.findOne({
-            where: {
-              user_id: req.user.id,
-              mock_test_id: test.id,
-            },
-          });
-          bookmark = !!bookmarks;
+    const tests = await Test.findAll({
+      attributes: [
+        'id',
+        'stream_id',
+        'title',
+        'question_count',
+        'time_limit',
+        [Sequelize.col('Stream.name'), 'stream_name'], // alias it
+        [
+          Sequelize.fn('COUNT', Sequelize.col('UserScores.user_id')),
+          'students_count',
+        ],
+        [
+          Sequelize.literal(
+            `CASE WHEN "Bookmarks"."id" IS NOT NULL THEN true ELSE false END`,
+          ),
+          'bookmark',
+        ],
+        [
+          Sequelize.fn('MAX', Sequelize.col('UserScores.created_at')),
+          'last_accessed',
+        ],
+      ],
+      include: [
+        { model: Stream, attributes: [] },
+        { model: UserScores, attributes: [] },
+        {
+          model: Bookmark,
+          attributes: [],
+          where: { user_id: req.user?.id || null },
+          required: false,
+        },
+        {
+          model: UserScores,
+          attributes: [],
+          where: { user_id: req.user?.id || null },
+          required: false,
         }
+      ],
+      where: { stream_id },
+      group: ['MockTest.id', 'Stream.id', 'Bookmarks.id'],
+      raw: true,
+      nest: false,
+    });
 
-        return {
-          ...test,
-          students_count: studentsCount,
-          bookmark,
-        };
-      }),
-    );
-    res.status(200).json(updatedTests);
+    res.status(200).json(tests);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error });
   }
