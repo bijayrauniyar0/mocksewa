@@ -38,5 +38,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
 app.use('/api/bookmarks', bookmarkRouter);
 app.use('/api/discussions', discussionRouter);
+app.use('/api/health-check', (_, res) => {
+  res.status(200).send('Server is healthy');
+});
 
 export default app;

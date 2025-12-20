@@ -10,33 +10,33 @@ import { Sequelize } from 'sequelize';
 export class StreamsService {
   async getStreams() {
     try {
-      const streams = await Stream.findAll({});
-      const updatedStreams = await Promise.all(
-        streams.map(async stream => {
-          const testsCount = await Test.count({
-            where: { stream_id: stream.id },
-          });
-          const numberOfStudents = await UserScores.count({
-            distinct: true,
-            col: 'user_id',
-            include: [
-              {
-                model: Test,
-                where: { stream_id: stream.id },
-                attributes: [],
-              },
+      const streams = await Stream.findAll({
+        attributes: {
+          include: [
+            [
+              Sequelize.literal(`(
+          SELECT COUNT(*) 
+          FROM mock_tests
+          WHERE mock_tests.stream_id = "Stream".id
+        )`),
+              'tests_count',
             ],
-          });
+            [
+              Sequelize.literal(`(
+          SELECT COUNT(DISTINCT user_scores.user_id)
+          FROM user_scores
+          JOIN mock_tests ON mock_tests.id = user_scores.mock_test_id
+          WHERE mock_tests.stream_id = "Stream".id
+        )`),
+              'students_count',
+            ],
+          ],
+        },
+        raw: true,
+      });
 
-          return {
-            ...stream.toJSON(),
-            tests_count: testsCount,
-            students_count: numberOfStudents,
-          };
-        }),
-      );
-      return updatedStreams;
-    } catch {
+      return streams;
+    } catch  {
       throw new Error('Internal server error');
     }
   }
@@ -87,8 +87,8 @@ export const getStreams = async (req: Request, res: Response) => {
     const streamsService = new StreamsService();
     const streams = await streamsService.getStreams();
     res.status(200).json(streams);
-  } catch {
-    res.status(500).json({ message: 'Internal server error' });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error', err });
   }
 };
 
@@ -132,7 +132,7 @@ export const getMockTestsListByStream = async (req: Request, res: Response) => {
           attributes: [],
           where: { user_id: req.user?.id || null },
           required: false,
-        }
+        },
       ],
       where: { stream_id },
       group: ['MockTest.id', 'Stream.id', 'Bookmarks.id'],
