@@ -43,7 +43,7 @@ export class LeaderboardService {
     const userScores = await UserScores.findAll({
       attributes: ['user_id', 'score', 'created_at'],
       where: whereClause,
-      include: [{ model: User, attributes: ['id', 'name'] }],
+      include: [{ model: User, attributes: ['id', 'name', 'avatar'] }],
     });
     return userScores;
   }
