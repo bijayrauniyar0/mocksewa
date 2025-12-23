@@ -17,11 +17,18 @@ import discussionRouter from './routes/discussionRoutes';
 import { CORS_ORIGIN } from './constants/index';
 
 const app = express();
-
+// const allowedOrigins = CORS_ORIGIN?.split(' ') || [];
 app.set('view engine', 'ejs');
 app.use(
   cors({
-    origin: CORS_ORIGIN?.split(' '),
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (CORS_ORIGIN && JSON.parse(CORS_ORIGIN).includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
   }),
 );
@@ -38,7 +45,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
 app.use('/api/bookmarks', bookmarkRouter);
 app.use('/api/discussions', discussionRouter);
-app.use('/api/health-check', (_, res) => {
+app.use('/api/health-check/', (request, res) => {
   res.status(200).send('Server is healthy');
 });
 
