@@ -9,12 +9,14 @@ import notificationRouter from './routes/notificationRoutes';
 import analyticsRouter from './routes/analyticsRoutes';
 import './models/testSectionLinkModel';
 import './models/userSettingsModel';
+import './models/questionsFlagModel';
 import authRouter from './routes/authRoutes';
 import cookieParser from 'cookie-parser';
 import reviewRouter from './routes/reviewsRoutes';
 import bookmarkRouter from './routes/bookmarkRoutes';
 import discussionRouter from './routes/discussionRoutes';
 import { CORS_ORIGIN } from './constants/index';
+import questionFlagRouter from './routes/questionFlagRouter';
 
 const app = express();
 // const allowedOrigins = CORS_ORIGIN?.split(' ') || [];
@@ -45,6 +47,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
 app.use('/api/bookmarks', bookmarkRouter);
 app.use('/api/discussions', discussionRouter);
+app.use('/api/questions-flag', questionFlagRouter);
 app.use('/api/health-check/', (request, res) => {
   res.status(200).send('Server is healthy');
 });
