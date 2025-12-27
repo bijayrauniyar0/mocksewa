@@ -17,23 +17,12 @@ import bookmarkRouter from './routes/bookmarkRoutes';
 import discussionRouter from './routes/discussionRoutes';
 import { CORS_ORIGIN } from './constants/index';
 import questionFlagRouter from './routes/questionFlagRouter';
+import { getCorsOptions } from './utils/createCorsMiddleware';
 
 const app = express();
-// const allowedOrigins = CORS_ORIGIN?.split(' ') || [];
+
 app.set('view engine', 'ejs');
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (CORS_ORIGIN && JSON.parse(CORS_ORIGIN).includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
-    credentials: true,
-  }),
-);
+app.use(cors(getCorsOptions(CORS_ORIGIN)));
 app.use(cookieParser()); // Middleware to parse cookies
 app.use(express.json()); // Middleware to parse JSON requests
 
