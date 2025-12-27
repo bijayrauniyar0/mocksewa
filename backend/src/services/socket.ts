@@ -1,9 +1,10 @@
 import { Server, Socket } from 'socket.io';
 import { socketAuthMiddleware } from '../middlewares/authenticate';
-import { CORS } from '../constants';
+import { CORS_ORIGIN } from '../constants';
 import { DiscussionService } from './discussionService';
 import redisClient from '../config/redis';
 import { createAdapter } from '@socket.io/redis-adapter';
+import { getCorsOptions } from '../utils/createCorsMiddleware';
 
 export type SocketSendMessageType = {
   mock_test_id: string;
@@ -24,7 +25,8 @@ class SocketService {
   private connectedUsers: Map<string, any> = new Map();
   constructor() {
     this._io = new Server({
-      ...CORS,
+      cors: getCorsOptions(CORS_ORIGIN),
+      // ...CORS,
       adapter: createAdapter(pubClient, subClient),
     });
     this._io.use(socketAuthMiddleware);
@@ -72,4 +74,3 @@ class SocketService {
 }
 
 export default SocketService;
-
