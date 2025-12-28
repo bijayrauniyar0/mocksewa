@@ -1,26 +1,63 @@
 import MCQ from '../models/mcqModels';
 import Test from '../models/mockTestModel';
 import { Request, Response } from 'express';
-import sequelize from '../config/database';
 import { StreamsService } from './streamController';
 import Section from '../models/sectionModel';
+import { shuffle } from '../utils/shuffle';
+import redisClient from '../config/redis';
 
-export class MCQsService {
-  async getMCQs(section_id: number, question_count: number) {
-    try {
-      const section = await Section.findByPk(section_id);
-      if (!section) {
-        throw new Error('Section not found');
-      }
-      const mcq_questions = await MCQ.findAll({
-        where: { section_id: section_id },
-        limit: question_count,
-        order: sequelize.random(),
-        raw: true,
+class MCQService {
+  async getQuestionsFromCache(cachedData: string) {
+    const data: Record<string, any> = JSON.parse(cachedData);
+    const cachedSections = data.sections;
+    const sectionIds = Object.keys(cachedSections);
+    if (sectionIds?.length) {
+      const sectionConfig = await Section.findAll({
+        where: { id: sectionIds },
       });
-      return mcq_questions;
-    } catch (error) {
-      throw new Error(error as string);
+      const sectionConfigMap = sectionConfig.reduce((acc, section) => {
+        acc[section.id] = {
+          name: section.name,
+          marks_per_question: section.marks_per_question,
+          negative_marking: section.negative_marking,
+        };
+        return acc;
+      }, {} as Record<number, any>);
+      const questionIds = Object.values(cachedSections).flat();
+      const questions = await MCQ.findAll({
+        where: {
+          id: questionIds,
+        },
+        attributes: ['id', 'section_id', 'question', 'options'],
+      });
+      const mcqHash = questions.reduce((acc, mcq) => {
+        acc[mcq.section_id] = [
+          ...(acc[mcq.section_id] || []),
+          {
+            ...mcq.toJSON(),
+            options: Object.entries(mcq.options).map(([key, value]) => ({
+              id: Number(key),
+              value,
+            })),
+          },
+        ];
+        return acc;
+      }, {} as Record<number, any[]>);
+      const mcqSections = sectionIds.map(sectionId => {
+        return {
+          section_id: Number(sectionId),
+          question_count: mcqHash[Number(sectionId)].length,
+          ...sectionConfigMap[Number(sectionId)],
+          questions: mcqHash[Number(sectionId)],
+        };
+      });
+
+      return {
+        questions_count: +data.meta?.questions_count,
+        time_limit: data.meta?.time_limit,
+        sections: mcqSections,
+        title: data.meta?.title,
+      };
     }
   }
 }
@@ -48,83 +85,119 @@ export const getMCQs = async (req: Request, res: Response) => {
       return;
     }
 
-    const streamsService = new StreamsService();
-    const { sections } =
-      await streamsService.getTestsMetaDataAccordingToSection(test_id);
+    const cacheKey = `test_questions:approved:${test_id}:${total_question_count}`;
+    const cachedData = await redisClient.get(cacheKey);
 
-    // Step 1: Calculate rounded counts per section
-    const sectionCounts = sections.map(section => ({
-      section,
-      count: Math.round(section.question_weight * total_question_count),
-    }));
-
-    // Step 2: Sum assigned counts
-    const assignedCount = sectionCounts.reduce((acc, sc) => acc + sc.count, 0);
-
-    // Step 3: Adjust counts randomly to match total_question_count exactly
-    let diff = total_question_count - assignedCount;
-
-    while (diff !== 0) {
-      // Filter sections with weight > 0 (eligible for adjustment)
-      const candidates = sectionCounts.filter(
-        sc => sc.section.question_weight > 0,
-      );
-      if (candidates.length === 0) break;
-
-      const randomIndex = Math.floor(Math.random() * candidates.length);
-      const chosen = candidates[randomIndex];
-
-      if (diff > 0) {
-        chosen.count += 1;
-        diff -= 1;
-      } else if (diff < 0 && chosen.count > 0) {
-        chosen.count -= 1;
-        diff += 1;
+    if (cachedData) {
+      const mcqData = await new MCQService().getQuestionsFromCache(cachedData);
+      if (mcqData) {
+        res.status(200).json(mcqData);
+        return;
       }
     }
 
-    const mcqService = new MCQsService();
+    const streamsService = new StreamsService();
+    const { sections } =
+      await streamsService.getTestsMetaDataAccordingToSection(test_id);
+   // 2️⃣ Fetch all approved questions for these sections
+    const sectionIds = sections.map(s => s.id);
 
-    // Step 4: Fetch questions per section with adjusted counts
-    const mcq_questions = await Promise.all(
-      sectionCounts.map(async ({ section, count }) => {
-        try {
-          const mcq_question = await mcqService.getMCQs(section.id, count);
-          // eslint-disable-next-line no-unused-vars
-          const { id, question_weight: _, ...restSectionData } = section;
+    const allQuestions = await MCQ.findAll({
+      where: {
+        section_id: sectionIds,
+        status: 'approved',
+      },
+    });
 
-          return {
-            section_id: id,
-            ...restSectionData,
-            question_count: count,
-            questions: (mcq_question ?? []).map(mcq => ({
-              ...mcq,
-              options: Object.entries(mcq.options).map(([key, value]) => ({
-                id: Number(key),
-                value,
-              })),
-            })),
-          };
-        } catch {
-          return {
-            section_id: section.id,
-            question_count: 0,
-            questions: [],
-            ...section,
-          };
-        }
-      }),
-    );
+    // 3️⃣ Group questions by section_id (O(Q))
+    const sectionQuestionsMap = allQuestions.reduce((acc, q) => {
+      if (!acc[q.section_id]) acc[q.section_id] = [];
+      acc[q.section_id].push(q);
+      return acc;
+    }, {} as Record<number, typeof allQuestions>);
+
+    // Shuffle each section once
+    for (const sectionId in sectionQuestionsMap) {
+      sectionQuestionsMap[sectionId] = shuffle(sectionQuestionsMap[sectionId]);
+    }
+
+    // 4️⃣ Calculate initial counts per section
+    let assignedCount = 0;
+    const sectionCounts = sections.map(section => {
+      const count = Math.round(section.question_weight * total_question_count);
+      assignedCount += count;
+      return { section, count };
+    });
+
+    // 5️⃣ Adjust counts to exactly match total_question_count
+    let diff = total_question_count - assignedCount;
+    const validSections = sectionCounts.filter(sc => sc.section.question_weight > 0);
+    let i = 0;
+    while (diff !== 0 && validSections.length) {
+      const sc = validSections[i % validSections.length];
+
+      if (diff > 0) {
+        sc.count++;
+        diff--;
+      } else if (diff < 0 && sc.count > 0) {
+        sc.count--;
+        diff++;
+      }
+
+      i++;
+    }
+
+    // 6️⃣ Prepare cache data
+    const cacheData: Record<string, any> = { sections: {}, meta: {} };
+
+    const mcq_sections = sectionCounts.map(({ section, count }) => {
+      const questions = sectionQuestionsMap[section.id] || [];
+      const selected = questions.slice(0, count);
+
+      cacheData.sections[section.id] = selected.map(q => q.id);
+
+      const { id: _id, question_weight: _w, ...sectionData } = section;
+
+      return {
+        section_id: section.id,
+        question_count: count,
+        ...sectionData,
+        questions: selected.map(mcq => ({
+          ...mcq.toJSON(),
+          options: Object.entries(mcq.options).map(([key, value]) => ({
+            id: Number(key),
+            value,
+          })),
+        })),
+      };
+    });
+
+    // 7️⃣ Adjust time limit proportionally if question_count differs
     let time_limit = test.time_limit;
-    if (question_count && +question_count !== total_question_count) {
+    if (+question_count !== total_question_count) {
       const timeLimitPerQuestion = test.time_limit / test.question_count;
       time_limit = Math.floor(timeLimitPerQuestion * total_question_count);
     }
 
+    // 8️⃣ Cache in Redis
+    redisClient.set(
+      cacheKey,
+      JSON.stringify({
+        ...cacheData,
+        meta: {
+          time_limit,
+          questions_count: total_question_count,
+          title: test.title,
+        },
+      }),
+      { EX: 3600 },
+    );
+
+    // 9️⃣ Send response
     res.status(200).json({
       questions_count: total_question_count,
       time_limit,
-      sections: mcq_questions,
+      sections: mcq_sections,
       title: test.title,
     });
   } catch (error) {
