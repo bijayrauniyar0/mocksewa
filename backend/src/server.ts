@@ -11,6 +11,7 @@ import './models/testSectionLinkModel';
 import './models/userSettingsModel';
 import './models/questionsFlagModel';
 import './models/historyQuestionsModel';
+import './models/userAttemptDetailModel';
 import authRouter from './routes/authRoutes';
 import cookieParser from 'cookie-parser';
 import reviewRouter from './routes/reviewsRoutes';
