@@ -11,6 +11,12 @@ import UserAttemptDetail, {
 } from '../models/userAttemptDetailModel';
 import sequelize from '../config/database';
 
+interface Question {
+  id: number;
+  section_id: number;
+  question: string;
+  options: { id: number; value: string }[];
+}
 class MCQService {
   private test_id: string;
   private question_count: number;
@@ -80,11 +86,11 @@ class MCQService {
     const question_count = this.question_count;
     const test_id = this.test_id;
 
-    const cachedData = await this.getQuestionsFromCache();
+    // const cachedData = await this.getQuestionsFromCache();
 
-    if (cachedData) {
-      return cachedData;
-    }
+    // if (cachedData) {
+    //   return cachedData;
+    // }
     const test = await Test.findByPk(test_id);
     if (!test) {
       throw new Error('Test not found');
@@ -100,70 +106,38 @@ class MCQService {
         section_id: sectionIds,
         status: 'approved',
       },
+      attributes: ['id', 'section_id', 'question', 'options'],
     });
 
-    const sectionQuestionsMap = allQuestions.reduce((acc, q) => {
+    const shuffledQuestions = shuffle(allQuestions);
+    const sectionQuestionsMap = shuffledQuestions.reduce((acc, q) => {
       if (!acc[q.section_id]) acc[q.section_id] = [];
       acc[q.section_id].push(q);
       return acc;
     }, {} as Record<number, typeof allQuestions>);
 
-    // Shuffle each section once
-    for (const sectionId in sectionQuestionsMap) {
-      sectionQuestionsMap[sectionId] = shuffle(sectionQuestionsMap[sectionId]);
-    }
+    let actuallyAssigned = 0;
+    let runningTotalWeight = 0;
+    const questionIds: number[] = [];
+    let full_marks = 0;
 
-    // 4️⃣ Calculate initial counts per section
-    let assignedCount = 0;
-    const sectionCounts = sections.map(section => {
-      const count = Math.round(section.question_weight * question_count);
-      assignedCount += count;
-      return { section, count };
-    });
-
-    // 5️⃣ Adjust counts to exactly match total_question_count
-    let diff = question_count - assignedCount;
-    const validSections = sectionCounts.filter(
-      sc => sc.section.question_weight > 0,
-    );
-    let i = 0;
-    while (diff !== 0 && validSections.length) {
-      const sc = validSections[i % validSections.length];
-
-      if (diff > 0) {
-        sc.count++;
-        diff--;
-      } else if (diff < 0 && sc.count > 0) {
-        sc.count--;
-        diff++;
-      }
-
-      i++;
-    }
-
-    // 6️⃣ Prepare cache data
-    const cacheData: Record<string, any> = { sections: {}, meta: {} };
-
-    const mcq_sections = sectionCounts.map(({ section, count }) => {
-      const questions = sectionQuestionsMap[section.id] || [];
-      const selected = questions.slice(0, count);
-
-      cacheData.sections[section.id] = selected.map(q => q.id);
-
-      const { id: _id, question_weight: _w, ...sectionData } = section;
-
-      return {
-        section_id: section.id,
-        question_count: count,
-        ...sectionData,
-        questions: selected.map(mcq => ({
+    const questions: Question[] = sections.flatMap(section => {
+      runningTotalWeight += section.question_weight;
+      const cumulativeTarget = Math.round(runningTotalWeight * question_count);
+      const count = cumulativeTarget - actuallyAssigned;
+      actuallyAssigned += count;
+      const pool = shuffle(sectionQuestionsMap[section.id]) || [];
+      full_marks += count * section.marks_per_question;
+      return pool.slice(0, count).map(mcq => {
+        questionIds.push(mcq.id);
+        return {
           ...mcq.toJSON(),
-          options: Object.entries(mcq.options).map(([key, value]) => ({
-            id: Number(key),
-            value,
+          options: Object.entries(mcq.options).map(([k, v]) => ({
+            id: Number(k),
+            value: v,
           })),
-        })),
-      };
+        };
+      });
     });
 
     // 7️⃣ Adjust time limit proportionally if question_count differs
@@ -173,25 +147,43 @@ class MCQService {
       time_limit = Math.floor(timeLimitPerQuestion * question_count);
     }
 
-    redisClient.set(
-      this.cacheKey,
-      JSON.stringify({
-        ...cacheData,
-        meta: {
-          time_limit,
-          questions_count: question_count,
-          title: test.title,
-        },
-      }),
-      { EX: 3600 },
-    );
+    redisClient.set(this.cacheKey, JSON.stringify(questionIds), { EX: 3600 });
+
+    let isUniformMarking = true;
+    const firstSection = sections[0];
+
+    const responseSections = sections.map((section, index) => {
+      // check marking only for the first section against others
+      if (index > 0) {
+        if (
+          section.marks_per_question !== firstSection.marks_per_question ||
+          section.negative_marking !== firstSection.negative_marking
+        ) {
+          isUniformMarking = false;
+        }
+      }
+
+      return {
+        section_id: section.id,
+        name: section.name,
+        negative_marking: section.negative_marking,
+        marks_per_question: section.marks_per_question,
+      };
+    });
+
+    // if uniform, just keep the first section
+    const normalizedSections = isUniformMarking
+      ? [responseSections[0]]
+      : responseSections;
 
     // 9️⃣ Send response
     return {
-      questions_count: question_count,
-      time_limit,
-      sections: mcq_sections,
       title: test.title,
+      time_limit,
+      questions_count: question_count,
+      full_marks,
+      sections: normalizedSections,
+      questions,
     };
   }
 }
