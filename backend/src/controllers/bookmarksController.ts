@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import Bookmark from '../models/bookmarksModel';
 import MockTest from '../models/mockTestModel';
-import Stream from '../models/streamModels';
 import { Sequelize } from 'sequelize';
 import { Op } from '@sequelize/core';
 
@@ -15,34 +14,19 @@ export const getAllBookmarks = async (req: Request, res: Response) => {
         'mock_test_id',
         [Sequelize.col('MockTest.title'), 'title'],
         [Sequelize.col('MockTest.time_limit'), 'time_limit'],
-        [Sequelize.col('MockTest->Stream.name'), 'stream_name'],
-        [Sequelize.col('MockTest.stream_id'), 'stream_id'],
         [Sequelize.col('MockTest.question_count'), 'question_count'],
       ],
       include: [
         {
           model: MockTest,
           attributes: [],
-          include: [
-            {
-              model: Stream,
-              attributes: [],
-            },
-          ],
         },
       ],
       where: {
         user_id,
         ...(search
           ? {
-              [Op.or]: [
-                { '$MockTest.title$': { [Op.iLike]: `%${search}%` } },
-                {
-                  '$MockTest->Stream.name$': {
-                    [Op.iLike]: `%${search}%`,
-                  },
-                },
-              ],
+              [Op.or]: [{ '$MockTest.title$': { [Op.iLike]: `%${search}%` } }],
             }
           : {}),
       },

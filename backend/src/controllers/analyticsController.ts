@@ -18,7 +18,6 @@ import {
   startOfWeek,
   startOfMonth,
 } from 'date-fns';
-import Stream from '../models/streamModels';
 import User from '../models/userModels';
 import Section from '../models/sectionModel';
 import { format } from 'date-fns';
@@ -81,7 +80,7 @@ export async function seedUserScores(count: number = 100) {
         unanswered_questions: 0,
         full_marks: 10,
         time_limit: 10,
-        mock_test_id:1,
+        mock_test_id: 1,
       };
     });
 
@@ -122,16 +121,6 @@ export class UserStatsService {
         {
           model: MockTest,
           attributes: ['title', 'time_limit'],
-          include: [
-            {
-              model: Stream,
-              attributes: ['name'], // or other fields
-            },
-            // {
-            //   model: Section,
-            //   attributes: ['question_count', 'marks_per_question'],
-            // },
-          ],
         },
       ],
       order: [['created_at', 'DESC']],
@@ -155,7 +144,6 @@ export class UserStatsService {
           ...scoreData,
           elapsed_time: scoreData.elapsed_time,
           title: `${MockTest.title}`,
-          stream_name: MockTest.Stream.name,
           test: MockTest.title,
         };
       });
@@ -465,7 +453,7 @@ export const getPerformanceDetails = async (
 
   if (!mock_test_id) {
     res.status(400).json({ message: 'Mock test id is required' });
-    return; 
+    return;
   }
 
   try {
@@ -498,7 +486,7 @@ export const getPerformanceDetails = async (
       },
     );
 
-   res.status(200).json({ ...userScoresData });
+    res.status(200).json({ ...userScoresData });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', details: error });
   }
@@ -663,12 +651,6 @@ export const getHistorySessions = async (
           {
             model: MockTest,
             attributes: ['title'],
-            include: [
-              {
-                model: Stream,
-                attributes: ['name'],
-              },
-            ],
           },
         ],
         order: [['created_at', 'DESC']],

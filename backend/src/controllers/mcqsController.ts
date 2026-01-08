@@ -1,7 +1,6 @@
 import MCQ from '../models/mcqModels';
 import Test from '../models/mockTestModel';
 import { Request, Response } from 'express';
-import { StreamsService } from './streamController';
 import Section from '../models/sectionModel';
 import { shuffle } from '../utils/shuffle';
 import redisClient from '../config/redis';
@@ -96,9 +95,10 @@ class MCQService {
       throw new Error('Test not found');
     }
 
-    const streamsService = new StreamsService();
-    const { sections } =
-      await streamsService.getTestsMetaDataAccordingToSection(test_id);
+    const sections = await test.getSections({
+      joinTableAttributes: [],
+      raw: true,
+    });
     const sectionIds = sections.map(s => s.id);
 
     const allQuestions = await MCQ.findAll({
@@ -405,3 +405,65 @@ export const createUserScore = async (req: Request, res: Response) => {
 //     res.status(500).json({ message: 'Internal server error' });
 //   }
 // };
+
+// New functions to replace stream controller functionality
+export const getAllMockTests = async (req: Request, res: Response) => {
+  try {
+    const mockTests = await Test.findAll({
+      attributes: ['id', 'title'],
+    });
+    res.status(200).json(mockTests);
+  } catch (error) {
+    res.status(500).send({ message: 'Internal Server Error', error });
+  }
+};
+
+export const getMockTestDetails = async (req: Request, res: Response) => {
+  const { mock_test_id } = req.params;
+  const { question_count } = req.query;
+
+  try {
+    if (!mock_test_id) {
+      res.status(400).json({ message: 'mock_test_id is required' });
+      return;
+    }
+
+    const test = await Test.findByPk(mock_test_id);
+    if (!test) {
+      res.status(404).json({ message: 'Test not found' });
+      return;
+    }
+
+    const sections = await test.getSections({
+      joinTableAttributes: [],
+      raw: true,
+    });
+
+    let bookmark = false;
+    if (req.user) {
+      const Bookmark = (await import('../models/bookmarksModel')).default;
+      const bookmarks = await Bookmark.findOne({
+        where: {
+          user_id: req.user.id,
+          mock_test_id: +mock_test_id,
+        },
+      });
+      bookmark = !!bookmarks;
+    }
+
+    let { time_limit } = test.toJSON();
+    if (question_count && Number(question_count) !== test.question_count) {
+      const timeLimitPerQuestion = time_limit / test.question_count;
+      time_limit = Math.floor(timeLimitPerQuestion * Number(question_count));
+    }
+
+    res.status(200).json({
+      ...test.toJSON(),
+      sections,
+      bookmark,
+      time_limit,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+};
