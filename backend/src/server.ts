@@ -27,17 +27,17 @@ app.use(cors(getCorsOptions(CORS_ORIGIN)));
 app.use(cookieParser()); // Middleware to parse cookies
 app.use(express.json()); // Middleware to parse JSON requests
 
-app.use('/api/user', userRoutes);
-app.use('/api/mcq', mcqRouter);
-app.use('/api/leaderboard', userScoresRouter);
-app.use('/api/notification', notificationRouter);
-app.use('/api/analytics', analyticsRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/review', reviewRouter);
-app.use('/api/bookmarks', bookmarkRouter);
-app.use('/api/discussions', discussionRouter);
-app.use('/api/questions-flag', questionFlagRouter);
-app.use('/api/health-check/', (request, res) => {
+app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/mcq', mcqRouter);
+app.use('/api/v1/leaderboard', userScoresRouter);
+app.use('/api/v1/notification', notificationRouter);
+app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/review', reviewRouter);
+app.use('/api/v1/bookmarks', bookmarkRouter);
+app.use('/api/v1/discussions', discussionRouter);
+app.use('/api/v1/questions-flag', questionFlagRouter);
+app.use('/api/v1/health-check/', (request, res) => {
   res.status(200).send('Server is healthy');
 });
 
