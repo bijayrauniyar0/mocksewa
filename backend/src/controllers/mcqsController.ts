@@ -9,6 +9,8 @@ import UserAttemptDetail, {
   UserAttemptDetailType,
 } from '../models/userAttemptDetailModel';
 import sequelize from '../config/database';
+import User from '../models/userModels';
+import { Op } from 'sequelize';
 
 interface Question {
   id: number;
@@ -467,3 +469,123 @@ export const getMockTestDetails = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error', error });
   }
 };
+
+export const getRecentActivity = async (req: Request, res: Response) => {
+  try {
+    const { mock_test_id } = req.params;
+
+    if (!mock_test_id) {
+      res.status(400).json({ message: 'Mock test ID is required' });
+      return;
+    }
+
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+    const activeUsersQuery = await UserScores.count({
+      where: {
+        mock_test_id: mock_test_id,
+        created_at: {
+          [Op.gte]: twentyFourHoursAgo,
+        },
+      },
+      distinct: true,
+      col: 'user_id',
+    });
+
+    const testsCompletedQuery = await UserScores.count({
+      where: {
+        mock_test_id: mock_test_id,
+        created_at: {
+          [Op.gte]: twentyFourHoursAgo,
+        },
+      },
+    });
+
+    const avgScoreResult = (await UserScores.findOne({
+      where: {
+        mock_test_id: mock_test_id,
+        created_at: {
+          [Op.gte]: twentyFourHoursAgo,
+        },
+      },
+      attributes: [
+        [sequelize.fn('AVG', sequelize.col('score')), 'averageScore'],
+        [sequelize.fn('AVG', sequelize.col('full_marks')), 'averageFullMarks'],
+      ],
+      raw: true,
+    })) as any;
+
+    // Calculate average percentage
+    let averageScorePercentage = 0;
+    if (
+      avgScoreResult &&
+      avgScoreResult.averageScore &&
+      avgScoreResult.averageFullMarks
+    ) {
+      averageScorePercentage = Math.round(
+        (Number(avgScoreResult.averageScore) /
+          Number(avgScoreResult.averageFullMarks)) *
+          100,
+      );
+    }
+
+    // Get recent 3 completions with user details
+    const recentCompletions = await UserScores.findAll({
+      where: {
+        mock_test_id: mock_test_id,
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name'],
+        },
+      ],
+      attributes: ['id', 'score', 'full_marks', 'created_at', 'user_id'],
+      order: [['created_at', 'DESC']],
+      limit: 3,
+    });
+
+    // Format recent completions
+    const formattedCompletions = recentCompletions.map(completion => {
+      const scorePercentage = Math.round(
+        (completion.score / completion.full_marks) * 100,
+      );
+      const timeAgo = getTimeAgo(completion.created_at);
+
+      return {
+        id: completion.id,
+        userName: completion.User?.name || 'Anonymous User',
+        scorePercentage: scorePercentage,
+        timeAgo: timeAgo,
+      };
+    });
+
+    res.status(200).json({
+      activeUsersToday: activeUsersQuery,
+      testsCompletedIn24h: testsCompletedQuery,
+      averageScoreToday: averageScorePercentage,
+      recentCompletions: formattedCompletions,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+};
+
+// Helper function to calculate time ago
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffInMs = now.getTime() - new Date(date).getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays}d ago`;
+
+  return `${Math.floor(diffInDays / 7)}w ago`;
+}

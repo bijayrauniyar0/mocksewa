@@ -26,7 +26,7 @@ import { paginate } from '../utils/paginate';
 
 export async function seedUserScores(count: number = 100) {
   const oneWeekAgo = new Date();
-  const startDate = new Date(oneWeekAgo.setDate(oneWeekAgo.getDate() - 7));
+  const startDate = new Date(oneWeekAgo.setDate(oneWeekAgo.getDate() - 15));
   const endDate = new Date();
   const getRandomDate = () => {
     const diff = endDate.getTime() - startDate.getTime();
@@ -80,7 +80,7 @@ export async function seedUserScores(count: number = 100) {
         unanswered_questions: 0,
         full_marks: 10,
         time_limit: 10,
-        mock_test_id: 1,
+        mock_test_id: 4,
       };
     });
 
@@ -287,7 +287,7 @@ export const getUserStats = async (
   req: Request<unknown, unknown, unknown, IGetUserStatsParamType>,
   res: Response,
 ) => {
-  // seedUserScores(300);
+  // seedUserScores(500);
   const { time_period, mock_test_id } = req.query;
   const { user } = req;
   const leaderboardService = new LeaderboardService();
@@ -448,7 +448,7 @@ export const getPerformanceDetails = async (
   req: Request<unknown, unknown, unknown, IGetUserStatsParamType>,
   res: Response,
 ) => {
-  const { page = 1, page_size = '15', mock_test_id } = req.query;
+  const { page = 1, page_size = 15, mock_test_id } = req.query;
   const { user } = req;
 
   if (!mock_test_id) {

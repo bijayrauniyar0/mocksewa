@@ -4,6 +4,7 @@ import {
   getMCQsAnswers,
   getAllMockTests,
   getMockTestDetails,
+  getRecentActivity,
 } from '../controllers/mcqsController';
 import express from 'express';
 import { authenticate, maybeAuthenticate } from '../middlewares/authenticate';
@@ -21,5 +22,8 @@ mcqRouter.get(
   maybeAuthenticate,
   getMockTestDetails,
 );
+
+// Recent activity endpoint
+mcqRouter.get('/exam/recent-activity/:mock_test_id', getRecentActivity);
 
 export default mcqRouter;
