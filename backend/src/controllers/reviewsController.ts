@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Review from '../models/reviewsModel';
 import User from '../models/userModels';
 import MockTest from '../models/mockTestModel';
-import Stream from '../models/streamModels';
 import { paginate } from '../utils/paginate';
 
 export const createReview = async (
@@ -47,12 +46,6 @@ export const getReviews = async (
         {
           model: MockTest,
           attributes: ['id', 'title'],
-          include: [
-            {
-              model: Stream,
-              attributes: ['id', 'name'],
-            },
-          ],
         },
       ],
       limit: Number(limit) || 10,

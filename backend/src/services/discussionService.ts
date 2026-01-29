@@ -151,7 +151,7 @@ export class DiscussionService {
   ) {
     const mockTest = await MockTest.findOne({
       where: { id: +mock_test_id },
-      attributes: ['title', 'stream_id'],
+      attributes: ['title'],
     });
     if (!mockTest) {
       return;
@@ -175,7 +175,6 @@ export class DiscussionService {
       type: 'discussion',
       meta: {
         mock_test_id: +mock_test_id,
-        stream_id: mockTest?.stream_id || null,
       },
     }));
     Notification.bulkCreate(notifications, {
