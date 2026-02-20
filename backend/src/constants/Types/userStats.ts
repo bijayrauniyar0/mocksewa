@@ -8,6 +8,7 @@ export type UserScoresArgsType = {
   startDate: ScoreFilter['startDate'];
   otherFilterOptions?: Partial<SequelizeAttributes>;
   mock_test_id?: number;
+  mode?: 'practice' | 'ranked';
   controllerName?: string;
 };
 
@@ -20,14 +21,18 @@ export interface IGetUserStatsParamType extends ParsedQs {
 
 export type UserScoresType = InferAttributes<UserScores>;
 
-export interface IPerformanceDetails
-  extends Omit<UserScoresType, 'elapsed_time'> {
+export interface IPerformanceDetails extends Omit<
+  UserScoresType,
+  'elapsed_time'
+> {
   rank_change: number | string;
   elapsed_time: string;
   accuracy: string;
 }
 
-export interface IRecentSessions
-  extends Omit<IPerformanceDetails, 'rank_change' | 'created_at'> {
+export interface IRecentSessions extends Omit<
+  IPerformanceDetails,
+  'rank_change' | 'created_at'
+> {
   date: Date;
 }

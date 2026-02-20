@@ -16,6 +16,7 @@ class UserScores extends Model {
   public section_scores!: JSON;
   public MockTest!: MockTest;
   public elapsed_time!: number;
+  public mode!: 'practice' | 'ranked' | 'challenge';
   public readonly created_at!: Date;
   public unanswered_questions!: number;
 }
@@ -33,7 +34,12 @@ UserScores.init(
     },
     mock_test_id: {
       type: DataTypes.INTEGER,
+      allowNull: true, // Allow null for daily challenges if they don't belong to a specific mock test
+    },
+    mode: {
+      type: DataTypes.ENUM('practice', 'ranked'),
       allowNull: false,
+      defaultValue: 'practice',
     },
     score: {
       type: DataTypes.INTEGER,
