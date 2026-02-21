@@ -1,49 +1,24 @@
-name: Deploy Backend to Azure VM
+name: CI/CD Backend Deployment
 
 on:
   push:
     branches:
-      - main # Change to master if needed
-  workflow_dispatch:
+      - main # Change this to 'master' if that is your primary branch
+  workflow_dispatch: # Allows you to trigger it manually from the UI
 
 jobs:
   deploy:
+    name: Build and Deploy on Azure VM
     runs-on: ubuntu-latest
     steps:
-      - name: Test Connection
+      - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-          script: echo "I am connected to $(hostname)"
-    # steps:
-    #   - name: SSH into VM and Deploy
-    #     uses: appleboy/ssh-action@v1.0.3
-    #     with:
-    #       host: ${{ secrets.VM_HOST }}
-    #       username: ${{ secrets.VM_USER }}
-    #       key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-    #       script: |
-    #         # 1. Enter the project directory
-    #         cd ~/your-repo-folder-name
-
-    #         # 2. Tell the VM to pull code using its local SSH identity
-    #         # (This uses the key you already have in ~/.ssh/)
-    #         ssh-agent sh -c 'ssh-add ~/.ssh/id_rsa; git pull origin main'
-
-    #         # 3. Build the Docker image on the VM
-    #         docker build -t my-backend:latest .
-
-    #         # 4. Refresh the container
-    #         docker stop backend-app || true
-    #         docker rm backend-app || true
-
-    #         docker run -d \
-    #           --name backend-app \
-    #           -p 8000:8000 \
-    #           --restart unless-stopped \
-    #           my-backend:latest
-
-    #         # 5. Cleanup old image layers to save disk space
-    #         docker image prune -f
+          script: |
+            cd mock-sewa-backend/
+            git pull origin main
+            docker compose up -d --build --remove-orphans
+            docker image prune -f
