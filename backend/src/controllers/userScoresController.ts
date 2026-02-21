@@ -27,6 +27,7 @@ export class LeaderboardService {
   }: ScoreFilter): Promise<UserScores[]> {
     const whereClause: any = {
       mock_test_id,
+      mode: 'ranked',
     };
     if (startDate !== 'all_time') {
       whereClause.created_at = {
@@ -213,9 +214,8 @@ export const getLeaderboard = async (
 ) => {
   const { mock_test_id } = req.query;
   const leaderboardService = new LeaderboardService();
-  const cachedLeaderboard = await leaderboardService.getCachedLeaderboard(
-    mock_test_id,
-  );
+  const cachedLeaderboard =
+    await leaderboardService.getCachedLeaderboard(mock_test_id);
   if (cachedLeaderboard) {
     res.status(200).json(cachedLeaderboard);
     return;

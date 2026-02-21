@@ -100,6 +100,7 @@ export class UserStatsService {
     startDate,
     otherFilterOptions,
     mock_test_id,
+    mode,
   }: UserScoresArgsType): Promise<UserScores[]> {
     const whereClause: any = {
       user_id: this.user_id,
@@ -111,6 +112,10 @@ export class UserStatsService {
       whereClause.created_at = {
         [Op.gte]: startDate,
       };
+    }
+    // Filter by mode
+    if (mode) {
+      whereClause.mode = mode;
     }
     const userScores = await UserScores.findAll({
       where: whereClause,
@@ -129,10 +134,14 @@ export class UserStatsService {
     return userScores;
   }
 
-  async getRecentSessions(dataLimit: number = 5): Promise<IRecentSessions[]> {
+  async getRecentSessions(
+    dataLimit: number = 5,
+    mode?: 'practice' | 'ranked',
+  ): Promise<IRecentSessions[]> {
     try {
       const userScores = await this.getUserScores({
         startDate: 'all_time',
+        mode,
         otherFilterOptions: {
           limit: dataLimit,
           raw: false,
@@ -251,16 +260,19 @@ export class UserStatsService {
     mock_test_id,
     leaderboardService,
     time_period,
+    mode,
   }: {
     mock_test_id: number;
     leaderboardService: LeaderboardService;
     time_period?: string | undefined;
+    mode?: 'practice' | 'ranked';
   }) => {
     const scores = await this.getUserScores({
       startDate: time_period
         ? getStartDateByTimePeriod(time_period)
         : 'all_time',
       mock_test_id,
+      mode,
     });
 
     const userRanks = await leaderboardService.getRankedUsers({
@@ -269,14 +281,23 @@ export class UserStatsService {
     });
 
     const totalScore = scores.reduce((acc, score) => acc + score.score, 0);
-    const avg_accuracy = +((totalScore / (scores.length * 10)) * 100).toFixed(
-      2,
+    const totalQuestions = scores.reduce(
+      (acc, score) => acc + (score.question_count || 0),
+      0,
     );
+    const totalFullMarks = scores.reduce(
+      (acc, score) => acc + (score.full_marks || 0),
+      0,
+    );
+    const avg_accuracy = totalFullMarks
+      ? +((totalScore / totalFullMarks) * 100).toFixed(2)
+      : 0;
 
     return {
       score: totalScore,
       avg_accuracy: avg_accuracy ? `${avg_accuracy}%` : 'N/A',
       total_sessions: scores.length,
+      total_questions: totalQuestions,
       current_rank: userRanks.find((u: any) => u.user_id === this.user_id)
         ?.rank,
     };
@@ -288,7 +309,7 @@ export const getUserStats = async (
   res: Response,
 ) => {
   // seedUserScores(500);
-  const { time_period, mock_test_id } = req.query;
+  const { time_period, mock_test_id, mode } = req.query as any;
   const { user } = req;
   const leaderboardService = new LeaderboardService();
   const userStatsService = new UserStatsService(user.id);
@@ -301,6 +322,7 @@ export const getUserStats = async (
       mock_test_id: Number(mock_test_id),
       leaderboardService,
       time_period,
+      mode,
     });
     res.status(200).json(stats);
   } catch (error) {
@@ -328,6 +350,7 @@ export const getUserStatsById = async (
     const stats = await userStatsService.getUserStats({
       mock_test_id: Number(mock_test_id),
       leaderboardService,
+      mode: req.query.mode as any,
     });
     res.status(200).json(stats);
   } catch (error) {
@@ -340,7 +363,7 @@ export const getRadarMetrics = async (
   res: Response,
 ) => {
   const { user_id } = req.params;
-  const { mock_test_id } = req.query;
+  const { mock_test_id, mode } = req.query as any;
 
   if (!mock_test_id) {
     res.status(400).send('Mock test id is required');
@@ -359,6 +382,7 @@ export const getRadarMetrics = async (
     const userAttempts = await userStatsService.getUserScores({
       startDate: 'all_time',
       mock_test_id: Number(mock_test_id),
+      mode,
     });
 
     if (userAttempts.length === 0) {
@@ -434,10 +458,11 @@ export const getRadarMetrics = async (
 
 export const getRecentSessions = async (req: Request, res: Response) => {
   const { user } = req;
+  const { mode } = req.query as any;
 
   const userStatsService = new UserStatsService(user.id);
   try {
-    const scoresData = await userStatsService.getRecentSessions(3);
+    const scoresData = await userStatsService.getRecentSessions(3, mode);
     res.status(200).json(scoresData);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', details: error });
@@ -448,7 +473,7 @@ export const getPerformanceDetails = async (
   req: Request<unknown, unknown, unknown, IGetUserStatsParamType>,
   res: Response,
 ) => {
-  const { page = 1, page_size = 15, mock_test_id } = req.query;
+  const { page = 1, page_size = 15, mock_test_id, mode } = req.query;
   const { user } = req;
 
   if (!mock_test_id) {
@@ -463,6 +488,7 @@ export const getPerformanceDetails = async (
         where: {
           user_id: user.id,
           mock_test_id: Number(mock_test_id),
+          ...(mode ? { mode } : {}),
         },
         attributes: [
           'id',
@@ -496,7 +522,7 @@ export const getPerformanceTrend = async (
   req: Request<unknown, unknown, unknown, { filter_by: string }>,
   res: Response,
 ) => {
-  const { filter_by } = req.query;
+  const { filter_by, mock_test_id, mode } = req.query as any;
   const { user } = req;
 
   try {
@@ -525,43 +551,68 @@ export const getPerformanceTrend = async (
     const scores = await UserScores.findAll({
       where: {
         user_id: user.id,
+        ...(mock_test_id ? { mock_test_id: Number(mock_test_id) } : {}),
+        ...(mode ? { mode } : {}),
         created_at: {
           [Op.gte]: rangeStarts[0],
         },
       },
       raw: true,
-      attributes: ['score', 'elapsed_time', 'created_at'],
+      attributes: [
+        'score',
+        'elapsed_time',
+        'created_at',
+        'full_marks',
+        'question_count',
+      ],
       order: [['created_at', 'ASC']],
     });
 
     const stats = [
-      { total_score: 0, total_accuracy: 0, total_time: 0, count: 0 }, // oldest
-      { total_score: 0, total_accuracy: 0, total_time: 0, count: 0 },
-      { total_score: 0, total_accuracy: 0, total_time: 0, count: 0 }, // most recent
+      {
+        total_score: 0,
+        total_time: 0,
+        total_full_marks: 0,
+        total_questions: 0,
+        count: 0,
+      }, // oldest
+      {
+        total_score: 0,
+        total_time: 0,
+        total_full_marks: 0,
+        total_questions: 0,
+        count: 0,
+      },
+      {
+        total_score: 0,
+        total_time: 0,
+        total_full_marks: 0,
+        total_questions: 0,
+        count: 0,
+      }, // most recent
     ];
 
     for (const score of scores) {
       const createdAt = new Date(score.created_at);
+      let targetIndex = 0;
 
       if (createdAt >= rangeStarts[2]) {
-        Object.assign(stats[2], {
-          total_score: stats[2].total_score + score.score,
-          total_time: stats[2].total_time + score.elapsed_time,
-          count: stats[2].count + 1,
-        });
+        targetIndex = 2;
       } else if (createdAt >= rangeStarts[1]) {
-        Object.assign(stats[1], {
-          total_score: stats[1].total_score + score.score,
-          total_time: stats[1].total_time + score.elapsed_time,
-          count: stats[1].count + 1,
-        });
+        targetIndex = 1;
       } else {
-        Object.assign(stats[0], {
-          total_score: stats[0].total_score + score.score,
-          total_time: stats[0].total_time + score.elapsed_time,
-          count: stats[0].count + 1,
-        });
+        targetIndex = 0;
       }
+
+      Object.assign(stats[targetIndex], {
+        total_score: stats[targetIndex].total_score + score.score,
+        total_time: stats[targetIndex].total_time + score.elapsed_time,
+        total_full_marks:
+          stats[targetIndex].total_full_marks + (score.full_marks || 0),
+        total_questions:
+          stats[targetIndex].total_questions + (score.question_count || 0),
+        count: stats[targetIndex].count + 1,
+      });
     }
 
     const formatStats = (data: (typeof stats)[0], start: Date, end: Date) => {
@@ -575,6 +626,11 @@ export const getPerformanceTrend = async (
         avg_elapsed_time: data.count
           ? +(data.total_time / data.count / 60).toFixed(2)
           : 0,
+        avg_accuracy: data.total_full_marks
+          ? +((data.total_score / data.total_full_marks) * 100).toFixed(2)
+          : 0,
+        total_questions: data.total_questions,
+        total_sessions: data.count,
       };
     };
 

@@ -5,6 +5,8 @@ import {
   getAllMockTests,
   getMockTestDetails,
   getRecentActivity,
+  getDailyChallenge,
+  submitChallengeScore,
 } from '../controllers/mcqsController';
 import express from 'express';
 import { authenticate, maybeAuthenticate } from '../middlewares/authenticate';
@@ -25,5 +27,9 @@ mcqRouter.get(
 
 // Recent activity endpoint
 mcqRouter.get('/exam/recent-activity/:mock_test_id', getRecentActivity);
+
+// Daily Challenge
+mcqRouter.get('/daily-challenge/', authenticate, getDailyChallenge);
+mcqRouter.post('/daily-challenge/submit/', authenticate, submitChallengeScore);
 
 export default mcqRouter;
