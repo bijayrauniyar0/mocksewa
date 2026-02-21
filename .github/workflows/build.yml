@@ -22,5 +22,6 @@ jobs:
             git pull origin main
             docker compose up -d --build --remove-orphans
             sleep 5
-            docker exec mocksewa-backend npx sequelize-cli db:migrate
+            CONTAINER_ID=$(docker ps -aqf "name=backend")
+            docker exec $CONTAINER_ID npx sequelize-cli db:migrate
             docker image prune -f
