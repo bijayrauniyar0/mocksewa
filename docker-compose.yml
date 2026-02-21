@@ -29,5 +29,4 @@ networks:
     driver: bridge # Uses the bridge driver to create the network
 
 volumes:
-  postgres_data:
   redis_data:
