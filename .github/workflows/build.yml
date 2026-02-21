@@ -22,5 +22,5 @@ jobs:
             git pull origin main
             docker compose up -d --build --remove-orphans
             sleep 5
-            docker exec mock-sewa-backend-backend npx sequelize-cli db:migrate
+            docker exec mocksewa-backend npx sequelize-cli db:migrate
             docker image prune -f

@@ -1,5 +1,6 @@
 services:
   backend:
+    container_name: mocksewa-backend
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -16,7 +17,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: redis
+    container_name: mocksewa-redis
     ports:
       - "6379:6379"
     volumes:
@@ -27,7 +28,7 @@ services:
 
   db:
     image: postgres:15
-    container_name: hamrocoders-sql-db
+    container_name: mocksewa-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER} # Set the database user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Set the database password
