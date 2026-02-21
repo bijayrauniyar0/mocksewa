@@ -8,7 +8,7 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
-RUN yarn build
+RUN NODE_OPTIONS="--max-old-space-size=4096" yarn build
 
 EXPOSE 9000
 
