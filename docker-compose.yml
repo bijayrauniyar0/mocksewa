@@ -10,7 +10,6 @@ services:
       - ./backend:/app # Syncs local backend directory with the container
     command: ["yarn", "dev"]
     depends_on:
-      - db
       - redis
     networks:
       - app-network # Ensure the backend is on the app-network
@@ -25,20 +24,6 @@ services:
     restart: always
     networks:
       - app-network # Ensure Redis is on the app-network
-
-  db:
-    image: postgres:15
-    container_name: mocksewa-db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER} # Set the database user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Set the database password
-      POSTGRES_DB: ${POSTGRES_DB} # Set the database name
-    ports:
-      - "5433:5432" # Exposes the database on port 5432
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network # Ensure the database is on the app-network
 
 networks:
   app-network:
