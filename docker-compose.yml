@@ -8,7 +8,6 @@ services:
       - "9000:9000" # Exposes the backend API
     volumes:
       - ./backend:/app # Syncs local backend directory with the container
-    command: ["yarn", "dev"]
     depends_on:
       - redis
     networks:
