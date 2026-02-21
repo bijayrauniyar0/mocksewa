@@ -6,8 +6,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "9000:9000" # Exposes the backend API
-    volumes:
-      - ./backend:/app # Syncs local backend directory with the container
     depends_on:
       - redis
     networks:
