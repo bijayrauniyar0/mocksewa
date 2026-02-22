@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ghcr.io/bijayrauniyar0/mock-sewa-backend:latest
+    image: ghcr.io/bijayrauniyar0/mocksewa:latest
     build: !!null # This removes the build instruction from the base file
 
 

@@ -37,20 +37,8 @@ jobs:
     name: Deploy to Azure VM
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment: production
     steps:
-      - name: Checkout code (to get docker-compose.yml)
-        uses: actions/checkout@v4
-
-      - name: Copy docker-compose.yml to VM
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-          source: "backend/docker-compose.yml"
-          target: "~/deploy-backend"
-          strip_components: 1
-
       - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -58,10 +46,12 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           script: |
-            mkdir -p ~/deploy-backend
-            cd ~/deploy-backend
+            cd ~/mock-sewa-backend/
+            git pull origin main
+            cd backend
 
-            # Inject Environment Variables from GitHub Secrets
+            # Re-inject Environment Variables from GitHub Secrets
+            # Using Repository or Environment secrets for professional security
             echo "${{ secrets.BACKEND_ENV }}" > .env
 
             # Authenticate with GHCR
@@ -72,7 +62,6 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
             # Run database migrations
-            # Note: The container name comes from docker-compose.yml
             sleep 5
             CONTAINER_ID=$(docker ps -aqf "name=mocksewa-backend")
             docker exec $CONTAINER_ID npx sequelize-cli db:migrate
