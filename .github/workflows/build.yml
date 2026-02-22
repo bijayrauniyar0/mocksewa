@@ -3,14 +3,54 @@ name: CI/CD Backend Deployment
 on:
   push:
     branches:
-      - main # Change this to 'master' if that is your primary branch
-  workflow_dispatch: # Allows you to trigger it manually from the UI
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  deploy:
-    name: Build and Deploy on Azure VM
+  build-and-push:
+    name: Build and Push to GHCR
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/backend
+          file: ./backend/backend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
+
+  deploy:
+    name: Deploy to Azure VM
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (to get docker-compose.yml)
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.yml to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          source: "backend/docker-compose.yml"
+          target: "~/deploy-backend"
+          strip_components: 1
+
       - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -18,11 +58,24 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           script: |
-            cd mock-sewa-backend/
-            git pull origin main
-            cd backend
-            docker compose up -d --build --remove-orphans
+            mkdir -p ~/deploy-backend
+            cd ~/deploy-backend
+
+            # Inject Environment Variables from GitHub Secrets
+            echo "${{ secrets.BACKEND_ENV }}" > .env
+
+            # Authenticate with GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull the new image and restart services using production override
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Run database migrations
+            # Note: The container name comes from docker-compose.yml
             sleep 5
-            CONTAINER_ID=$(docker ps -aqf "name=backend")
+            CONTAINER_ID=$(docker ps -aqf "name=mocksewa-backend")
             docker exec $CONTAINER_ID npx sequelize-cli db:migrate
+
+            # Cleanup old images
             docker image prune -f

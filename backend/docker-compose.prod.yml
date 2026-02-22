@@ -1,0 +1,8 @@
+services:
+  backend:
+    image: ghcr.io/bijayrauniyar0/mock-sewa-backend:latest
+    build: !!null # This removes the build instruction from the base file
+
+
+    env_file:
+      - .env # On the VM, we'll put the .env in the same folder
