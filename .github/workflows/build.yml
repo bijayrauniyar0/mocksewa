@@ -46,7 +46,9 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           script: |
-            # 1. Locate the project directory or clone it
+            set -e # Exit immediately if a command fails
+
+            # 1. Locate and enter the project directory
             if [ -d "$HOME/mocksewa" ]; then
               cd "$HOME/mocksewa"
             elif [ -d "$HOME/mock-sewa-backend" ]; then
@@ -57,32 +59,43 @@ jobs:
               cd "$HOME/mocksewa"
             fi
 
-            # 2. Sync orchestrator files
+            echo "Current Directory: $(pwd)"
             git pull origin main
-            cd backend
 
-            # 3. Inject Environment Variables
-            # We create it in both places to satisfy both the base and prod compose files
+            # 2. Enter the backend folder where docker-compose resides
+            cd backend
+            echo "Moving to backend directory: $(pwd)"
+
+            # 3. Inject Environment Variables (Multiple locations for safety)
+            # Create in ./backend/.env
             echo "${{ secrets.BACKEND_ENV }}" > .env
+            # Create in ./backend/backend/.env (which matches docker-compose.yml path)
             mkdir -p backend
             echo "${{ secrets.BACKEND_ENV }}" > backend/.env
+
+            echo "Listing files to verify .env path:"
+            ls -R | grep .env || echo "No .env found!"
 
             # 4. Authenticate with GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # 5. Pull and Update
+            echo "Pulling latest images..."
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend
+
+            echo "Starting containers..."
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
             # 6. Run Migrations (Safe Check)
             echo "Waiting for backend to start..."
-            sleep 10
+            sleep 15
             CONTAINER_ID=$(docker ps -qf "name=mocksewa-backend")
             if [ -n "$CONTAINER_ID" ]; then
               echo "Container found ($CONTAINER_ID), running migrations..."
               docker exec $CONTAINER_ID npx sequelize-cli db:migrate
             else
-              echo "Error: Backend container not found. Check logs with 'docker compose logs'."
+              echo "Error: Backend container failed to stay up. Checking logs..."
+              docker compose logs backend
               exit 1
             fi
 
