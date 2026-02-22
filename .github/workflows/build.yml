@@ -62,7 +62,10 @@ jobs:
             cd backend
 
             # 3. Inject Environment Variables
+            # We create it in both places to satisfy both the base and prod compose files
             echo "${{ secrets.BACKEND_ENV }}" > .env
+            mkdir -p backend
+            echo "${{ secrets.BACKEND_ENV }}" > backend/.env
 
             # 4. Authenticate with GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin

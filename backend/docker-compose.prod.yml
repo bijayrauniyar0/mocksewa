@@ -5,4 +5,4 @@ services:
 
 
     env_file:
-      - .env # On the VM, we'll put the .env in the same folder
+      - ./backend/.env
