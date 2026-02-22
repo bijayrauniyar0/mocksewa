@@ -46,25 +46,42 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           script: |
-            cd ~/mock-sewa-backend/
+            # 1. Locate the project directory or clone it
+            if [ -d "$HOME/mocksewa" ]; then
+              cd "$HOME/mocksewa"
+            elif [ -d "$HOME/mock-sewa-backend" ]; then
+              cd "$HOME/mock-sewa-backend"
+            else
+              echo "Directory not found, cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git "$HOME/mocksewa"
+              cd "$HOME/mocksewa"
+            fi
+
+            # 2. Sync orchestrator files
             git pull origin main
             cd backend
 
-            # Re-inject Environment Variables from GitHub Secrets
-            # Using Repository or Environment secrets for professional security
+            # 3. Inject Environment Variables
             echo "${{ secrets.BACKEND_ENV }}" > .env
 
-            # Authenticate with GHCR
+            # 4. Authenticate with GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull the new image and restart services using production override
+            # 5. Pull and Update
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
-            # Run database migrations
-            sleep 5
-            CONTAINER_ID=$(docker ps -aqf "name=mocksewa-backend")
-            docker exec $CONTAINER_ID npx sequelize-cli db:migrate
+            # 6. Run Migrations (Safe Check)
+            echo "Waiting for backend to start..."
+            sleep 10
+            CONTAINER_ID=$(docker ps -qf "name=mocksewa-backend")
+            if [ -n "$CONTAINER_ID" ]; then
+              echo "Container found ($CONTAINER_ID), running migrations..."
+              docker exec $CONTAINER_ID npx sequelize-cli db:migrate
+            else
+              echo "Error: Backend container not found. Check logs with 'docker compose logs'."
+              exit 1
+            fi
 
-            # Cleanup old images
+            # 7. Cleanup
             docker image prune -f
