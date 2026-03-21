@@ -5,5 +5,5 @@
       "use": "@vercel/next"
     }
   ],
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- frontend/"
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- ./frontend"
 }
