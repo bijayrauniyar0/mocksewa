@@ -1,5 +1,5 @@
 import { create } from "zustand";
-
+// Auth
 export type User = {
   id: number;
   name: string;
