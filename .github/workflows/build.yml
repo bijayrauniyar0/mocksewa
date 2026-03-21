@@ -41,10 +41,6 @@ jobs:
             cd ~/mocksewa/backend
             git pull origin main
 
-            # Setup .env exactly where compose expects it
-            # mkdir -p backend
-            # echo "${{ secrets.BACKEND_ENV }}" > backend/.env
-
             # Deploy
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             export DOCKER_IMAGE=${{ needs.build.outputs.image }}
