@@ -1,8 +1,0 @@
-services:
-  backend:
-    image: ghcr.io/bijayrauniyar0/mocksewa:latest
-    build: !!null # This removes the build instruction from the base file
-
-
-    env_file:
-      - ./backend/.env
