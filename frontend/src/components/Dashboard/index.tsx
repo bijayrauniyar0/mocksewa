@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   BookOpen,
@@ -15,8 +14,6 @@ import React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import Skeleton from "@/components/ui/Skeleton";
-import { getDailyChallenge } from "@/services/ClientSide/academics";
 
 interface QuickStat {
   icon: React.ReactNode;
@@ -26,15 +23,7 @@ interface QuickStat {
 }
 
 const Dashboard = () => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["daily-challenge-status"],
-    queryFn: async () => {
-      const res = await getDailyChallenge();
-      return res.data;
-    },
-    retry: false,
-  });
-
+  // Mock data - assuming user is logged in
   const quickStats: QuickStat[] = [
     {
       icon: <TrendingUp className="w-5 h-5" />,
@@ -62,11 +51,11 @@ const Dashboard = () => {
     },
   ];
 
-  if (isLoading) {
-    return <Skeleton className="w-full h-96" />;
-  }
-
-  const { challenge, participated } = data || {};
+  // Mock challenge data
+  const challenge = {
+    title: "Daily JavaScript Challenge",
+  };
+  const participated = false;
 
   return (
     <div className="w-full space-y-8">
