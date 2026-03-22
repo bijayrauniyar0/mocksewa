@@ -1,11 +1,16 @@
 export const revalidate = 1200;
-import HomeComponent from "@/components/Home";
+import Dashboard from "@/components/Dashboard";
+import BindContentContainer from "@/components/common/BindContentContainer";
 
 export const metadata = {
   title: "Dashboard - MockSewa",
-  description: "User dashboard",
+  description: "User dashboard with daily challenges and performance tracking",
 };
 
 export default function DashboardPage() {
-  return <HomeComponent />;
+  return (
+    <BindContentContainer className="py-8">
+      <Dashboard />
+    </BindContentContainer>
+  );
 }

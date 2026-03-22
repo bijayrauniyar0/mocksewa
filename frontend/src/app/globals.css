@@ -7,7 +7,7 @@ body {
 }
 
 :root {
-  /* Primary Colors */
+  /* Primary Colors - Enhanced Purple/Indigo */
   --primary-50: #faf5ff;
   --primary-100: #f3ecfa;
   --primary-200: #e1d4f3;
@@ -19,8 +19,14 @@ body {
   --primary-800: #433569;
   --primary-900: #261b3d;
 
-  /* Secondary Color */
+  /* Secondary Color - Accent */
   --secondary-100: #9c27b0;
+  
+  /* Accent Colors */
+  --accent-blue: #3b82f6;
+  --accent-orange: #f97316;
+  --accent-green: #22c55e;
+  --accent-yellow: #fbbf24;
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
