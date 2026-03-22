@@ -2,8 +2,8 @@
 
 import {
   ArrowRight,
-  Award,
   BookOpen,
+  CheckCircle2,
   Flame,
   Play,
   Sparkles,
@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 const Dashboard = () => {
   const userName = "Priya Sharma";
   const currentSubject = "English";
+  const dailyChallengeCompleted = false;
 
   const dailyChallenge = {
     title: "English Grammar - Sentence Correction",
@@ -26,7 +27,6 @@ const Dashboard = () => {
     difficulty: "Medium",
     questions: 5,
     timeLimit: 10,
-    reward: 50,
   };
 
   const stats = [
@@ -46,9 +46,9 @@ const Dashboard = () => {
       icon: <BookOpen className="w-5 h-5" />,
     },
     {
-      label: "Points Earned",
-      value: "2,850",
-      icon: <Award className="w-5 h-5" />,
+      label: "Time Invested",
+      value: "12h 45m",
+      icon: <BookOpen className="w-5 h-5" />,
     },
   ];
 
@@ -130,60 +130,86 @@ const Dashboard = () => {
       </div>
 
       {/* Daily Challenge Banner */}
-      <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 p-8 text-white shadow-lg">
-        <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
-        
-        <div className="relative z-10">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 backdrop-blur">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-sm font-semibold">Daily Challenge</span>
-          </div>
+      {!dailyChallengeCompleted ? (
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 p-8 text-white shadow-lg">
+          <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
           
-          <div className="grid gap-8 md:grid-cols-3 md:items-center">
-            <div className="md:col-span-2">
-              <h2 className="mb-2 text-4xl font-bold">{dailyChallenge.title}</h2>
-              <p className="mb-6 text-primary-100">{dailyChallenge.description}</p>
-              
-              <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <p className="text-xs font-semibold text-primary-100 uppercase">Difficulty</p>
-                  <p className="mt-1 font-bold">{dailyChallenge.difficulty}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-primary-100 uppercase">Questions</p>
-                  <p className="mt-1 font-bold">{dailyChallenge.questions}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-primary-100 uppercase">Time</p>
-                  <p className="mt-1 font-bold">{dailyChallenge.timeLimit} min</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-primary-100 uppercase">Reward</p>
-                  <p className="mt-1 font-bold">+{dailyChallenge.reward} pts</p>
-                </div>
-              </div>
-              
-              <Link href="/daily-challenge">
-                <Button className="group bg-white text-primary-700 hover:bg-slate-100">
-                  <Play className="mr-2 h-4 w-4" />
-                  Start Now
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
+          <div className="relative z-10">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 backdrop-blur">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm font-semibold">Daily Challenge</span>
             </div>
             
-            <div className="hidden rounded-2xl bg-white/10 p-6 backdrop-blur md:flex md:flex-col md:items-center md:justify-center">
-              <div className="mb-4 inline-flex items-center justify-center rounded-lg bg-white/20 p-4">
-                <BookOpen className="h-8 w-8" />
+            <div className="grid gap-8 md:grid-cols-3 md:items-center">
+              <div className="md:col-span-2">
+                <h2 className="mb-2 text-4xl font-bold">{dailyChallenge.title}</h2>
+                <p className="mb-6 text-primary-100">{dailyChallenge.description}</p>
+                
+                <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs font-semibold text-primary-100 uppercase">Difficulty</p>
+                    <p className="mt-1 font-bold">{dailyChallenge.difficulty}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-primary-100 uppercase">Questions</p>
+                    <p className="mt-1 font-bold">{dailyChallenge.questions}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-primary-100 uppercase">Time</p>
+                    <p className="mt-1 font-bold">{dailyChallenge.timeLimit} min</p>
+                  </div>
+                </div>
+                
+                <Link href="/daily-challenge">
+                  <Button className="group bg-white text-primary-700 hover:bg-slate-100">
+                    <Play className="mr-2 h-4 w-4" />
+                    Start Now
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
               </div>
-              <p className="text-center text-sm font-semibold">
-                Consistent practice builds mastery
-              </p>
+              
+              <div className="hidden rounded-2xl bg-white/10 p-6 backdrop-blur md:flex md:flex-col md:items-center md:justify-center">
+                <div className="mb-4 inline-flex items-center justify-center rounded-lg bg-white/20 p-4">
+                  <BookOpen className="h-8 w-8" />
+                </div>
+                <p className="text-center text-sm font-semibold">
+                  Consistent practice builds mastery
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      ) : (
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-slate-100 to-slate-200 p-8 shadow-lg">
+          <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-primary-100/30 blur-3xl" />
+          <div className="relative z-10 flex items-center gap-6 md:gap-8">
+            <div className="flex-shrink-0">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-600">
+                <CheckCircle2 className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="mb-1 text-2xl font-bold text-slate-900">
+                Challenge Completed!
+              </h3>
+              <p className="text-slate-600">
+                You scored 82% on {dailyChallenge.title.split(' - ')[0]}
+              </p>
+              <p className="mt-3 text-sm text-slate-500">
+                Come back tomorrow for a new challenge
+              </p>
+            </div>
+            <div className="hidden flex-shrink-0 md:block">
+              <Button variant="outline" className="border-slate-300 text-slate-700">
+                View Results
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -321,8 +347,8 @@ const Dashboard = () => {
             <p className="text-3xl font-bold text-slate-900">4h 32m</p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-600 mb-2">Rank</p>
-            <p className="text-3xl font-bold text-slate-900">#47</p>
+            <p className="text-sm text-slate-600 mb-2">Improvement</p>
+            <p className="text-3xl font-bold text-primary-600">+12%</p>
           </div>
         </div>
       </Card>
