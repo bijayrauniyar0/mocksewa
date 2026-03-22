@@ -12,7 +12,7 @@ type HeaderProps = {
   handleFullScreen: () => void;
 };
 const Header = ({ isFullScreen, handleFullScreen }: HeaderProps) => {
-  const { mcqData } = useMCQContext();
+  const { mcqData, mode } = useMCQContext();
   return (
     <FlexRow className="px-4 flex w-full flex-wrap items-center justify-between border-b border-gray-300 py-2">
       <FlexRow className="items-center gap-2 md:gap-4">
@@ -20,17 +20,18 @@ const Header = ({ isFullScreen, handleFullScreen }: HeaderProps) => {
         <h3 className="text-md max-md:hidden text-gray-600 font-semibold md:text-base">
           Exam: {mcqData.title}
         </h3>
-        {useMCQContext().mode === "challenge" && (
+        {mode === "challenge" && (
           <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-yellow-200 uppercase tracking-wider">
             Daily Challenge
           </span>
         )}
-        {useMCQContext().mode === "ranked" && (
+        {mode === "ranked" && (
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-blue-200 uppercase tracking-wider">
             Ranked Mode
           </span>
         )}
       </FlexRow>
+
 
       <FlexRow className="items-center gap-2">
         <button

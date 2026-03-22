@@ -2,8 +2,8 @@ import { Lato } from "next/font/google";
 
 const lato = Lato({
   variable: "--font-lato",
-  weight: ["400", "700"], // Add appropriate weights
-  subsets: ["latin"], // Uncomment and include subsets
+  weight: ["400", "700"],
+  subsets: ["latin"],
 });
 
 import "./globals.css";
@@ -29,7 +29,6 @@ export default async function RootLayout({
           <ReactQueryProvider>
             <AuthProvider />
             <ModalWrapper />
-            {/* <ToastContainer /> */}
             {children}
           </ReactQueryProvider>
         </Suspense>

@@ -1,4 +1,4 @@
-import { Check, DoorOpen } from "lucide-react";
+import { Check, DoorOpen, Home } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
@@ -18,11 +18,17 @@ const EXIT_BUTTON_CLASSES =
 const SubmitButton = React.memo(() => {
   const { mock_test_id } = useParams();
   const router = useRouter();
-  const { solvedCount, handleSubmit, mcqData } = useMCQContext();
-  const viewMode = "questions"; // Placeholder for actual viewMode from context
-  if (viewMode !== "questions" && viewMode !== "answers") {
-    return null;
-  }
+  const {
+    solvedCount,
+    handleSubmit,
+    mcqData,
+    viewMode,
+    mode,
+    answersIsLoading,
+  } = useMCQContext();
+
+  const exitPath = mode === "challenge" ? "/" : `/mock-tests/${mock_test_id}`;
+
   const submitButton: { [key: string]: React.ReactNode } = {
     questions: (
       <FlexRow className="gap-2">
@@ -37,11 +43,11 @@ const SubmitButton = React.memo(() => {
               </Button>
             }
             handleConfirm={() => {
-              router.push(`/mock-tests/${mock_test_id}`);
+              router.push(exitPath);
             }}
           />
         ) : (
-          <Link href={`/mock-tests/${mock_test_id}`}>
+          <Link href={exitPath}>
             <Button variant="secondary" className={BUTTON_CLASSES}>
               <DoorOpen className={ICON_CLASSES} />
               Cancel
@@ -55,9 +61,13 @@ const SubmitButton = React.memo(() => {
             confirmText="Submit"
             overlayClassName="bg-black/50"
             triggerChildren={
-              <Button className={BUTTON_CLASSES} variant="primary">
+              <Button
+                className={BUTTON_CLASSES}
+                variant="primary"
+                disabled={answersIsLoading}
+              >
                 <Check className={ICON_CLASSES} />
-                Submit
+                {answersIsLoading ? "Submitting..." : "Submit"}
               </Button>
             }
             handleConfirm={() => {
@@ -68,20 +78,30 @@ const SubmitButton = React.memo(() => {
           <Button
             className={BUTTON_CLASSES}
             variant="secondary"
+            disabled={answersIsLoading}
             onClick={() => {
               handleSubmit();
             }}
           >
             <Check className={ICON_CLASSES} />
-            Submit
+            {answersIsLoading ? "Submitting..." : "Submit"}
           </Button>
         )}
       </FlexRow>
     ),
     answers: (
-      <Link href={`/mock-tests`}>
+      <Link href="/">
         <Button className={EXIT_BUTTON_CLASSES} variant="secondary">
-          Exit
+          <Home className={ICON_CLASSES} />
+          Go Home
+        </Button>
+      </Link>
+    ),
+    results: (
+      <Link href="/">
+        <Button className={EXIT_BUTTON_CLASSES} variant="secondary">
+          <Home className={ICON_CLASSES} />
+          Go Home
         </Button>
       </Link>
     ),
@@ -89,6 +109,8 @@ const SubmitButton = React.memo(() => {
 
   return <>{submitButton[viewMode]}</>;
 });
+
+
 
 SubmitButton.displayName = "SubmitButton";
 

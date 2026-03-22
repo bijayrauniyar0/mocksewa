@@ -156,7 +156,7 @@ class MCQService {
       const cumulativeTarget = Math.round(runningTotalWeight * question_count);
       const count = cumulativeTarget - actuallyAssigned;
       actuallyAssigned += count;
-      const pool = shuffle(sectionQuestionsMap[section.id]) || [];
+      const pool = shuffle(sectionQuestionsMap[section.id] || []) || [];
       full_marks += count * section.marks_per_question;
       return pool.slice(0, count).map(mcq => {
         questionIds.push(mcq.id);
@@ -172,7 +172,7 @@ class MCQService {
 
     // 7️⃣ Adjust time limit proportionally if question_count differs
     let time_limit = test.time_limit;
-    if (+question_count !== question_count) {
+    if (question_count !== test.question_count) {
       const timeLimitPerQuestion = test.time_limit / test.question_count;
       time_limit = Math.floor(timeLimitPerQuestion * question_count);
     }
