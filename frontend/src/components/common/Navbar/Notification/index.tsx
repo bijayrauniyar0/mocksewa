@@ -28,8 +28,7 @@ const constructNotificationUrl = (notification: NotificationType) => {
   switch (notification.type) {
     case "leaderboard":
       return `/mock-test/${notification.meta?.mock_test_id}`;
-    case "discussion":
-      return `/mock-tests/${notification.meta?.mock_test_id}`;
+
     case "user":
       return `/profile/${notification.meta?.user_id}`;
     default:

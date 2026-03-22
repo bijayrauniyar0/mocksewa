@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../../utils/jwtUtils';
 import User from '../../models/userModels';
-import { Socket } from 'socket.io';
-import { parse } from 'cookie';
 
-// eslint-disable-next-line no-unused-vars
-type SocketNextFunction = (err?: Error) => void;
+
+
+
 
 export const authenticate = async (
   req: Request,
@@ -74,35 +73,4 @@ export const maybeAuthenticate = async (
   next(); // Always continue to controller
 };
 
-export const socketAuthMiddleware = (
-  socket: Socket,
-  next: SocketNextFunction,
-) => {
-  try {
-    const cookieHeader = socket.handshake.headers.cookie;
-    if (!cookieHeader) {
-      return next(new Error('No cookies found'));
-    }
 
-    // Parse cookies into an object
-    const cookies = parse(cookieHeader);
-
-    // Extract the specific token cookie (replace 'token' with your cookie name)
-    const token = cookies['token'];
-
-    if (!token) {
-      next(new Error('Unauthorized: No token found in cookies'));
-      return;
-    }
-    const decoded = verifyToken(token);
-    if (!decoded || typeof decoded !== 'object' || !('id' in decoded)) {
-      next(new Error('Unauthorized: Invalid token format'));
-      return;
-    }
-    socket.data.user = decoded;
-    next();
-  } catch {
-    next(new Error('Unauthorized: Invalid token or cookie parsing error'));
-    return;
-  }
-};

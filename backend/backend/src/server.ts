@@ -18,7 +18,7 @@ import authRouter from './routes/authRoutes';
 import cookieParser from 'cookie-parser';
 import reviewRouter from './routes/reviewsRoutes';
 import bookmarkRouter from './routes/bookmarkRoutes';
-import discussionRouter from './routes/discussionRoutes';
+
 import { CORS_ORIGIN } from './constants/index';
 import questionFlagRouter from './routes/questionFlagRouter';
 import { getCorsOptions } from './utils/createCorsMiddleware';
@@ -38,7 +38,7 @@ app.use('/api/v1/analytics', analyticsRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/review', reviewRouter);
 app.use('/api/v1/bookmarks', bookmarkRouter);
-app.use('/api/v1/discussions', discussionRouter);
+
 app.use('/api/v1/questions-flag', questionFlagRouter);
 app.use('/api/v1/health-check/', (request, res) => {
   res.status(200).send('Server is healthy');

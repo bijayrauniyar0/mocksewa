@@ -61,40 +61,6 @@ export interface TestMetaDataItem {
   icon_color: string;
 }
 
-export type ChatMessageUserType = {
-  id: number;
-  name: string;
-  avatar: string | null;
-};
-export type Mentions = {
-  user_id: string;
-  offset: number;
-  length: number;
-};
-export type MessageType = {
-  text: string;
-  mentions: Mentions[];
-};
-export type InitialChatMessageType = {
-  user_id: number;
-  message: MessageType;
-  status?: string;
-  id?: number;
-  messageId?: string;
-  created_at: string;
-};
-export type ChatMessage = InitialChatMessageType & {
-  User: Partial<ChatMessageUserType>;
-  isFirst?: boolean;
-  isMiddle?: boolean;
-  isLast?: boolean;
-};
-
-export type UserMention = {
-  id: number;
-  name: string;
-};
-
 export type ReviewWithoutMockTestType = Omit<ReviewType, "MockTest"> & {
   created_at: string;
 };

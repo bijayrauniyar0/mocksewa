@@ -47,25 +47,6 @@ export async function seedUserScores(count: number = 100) {
     const mockTestIds = mockTest.map(test => test.id);
     const api_url = 'https://zenquotes.io/api/quotes/';
 
-    // create discussions
-    // async function getapi() {
-    //   const response = await fetch(api_url);
-    //   const data = await response.json();
-    //   return data;
-    // }
-    // const data = await getapi();
-    // const records = data.map((quote: any) => {
-    //   const user_id = userIds[getRandomInt(0, userIds.length - 1)];
-    //   const mock_test_id = mockTestIds[getRandomInt(0, mockTestIds.length - 1)];
-    //   return {
-    //     user_id,
-    //     message: quote.q,
-    //     created_at: getRandomDate(),
-    //     mock_test_id,
-    //   };
-    // });
-    // await Discussion.bulkCreate(records);
-
     // create scores
 
     const records = Array.from({ length: count }).map(() => {
