@@ -7,11 +7,7 @@ export const metadata = {
   description: "Leaderboard page",
 };
 const LeaderboardPage = () => {
-  return (
-    <ProtectedLayout>
-      <Leaderboard />
-    </ProtectedLayout>
-  );
+  return <Leaderboard />;
 };
 
 export default LeaderboardPage;

@@ -41,8 +41,9 @@ import {
   getUserScores,
 } from "@/services/ClientSide/userStats";
 
-const Stats = () => {
-  const { user_id } = useParams();
+const Stats = ({ userId }: { userId?: string }) => {
+  const { user_id: paramUserId } = useParams();
+  const user_id = userId || paramUserId;
   const { data: radarMetrics, isLoading: radarChartDataIsLoading } = useQuery({
     queryKey: ["radarMetrics", user_id],
     queryFn: () => getMetricsForRadarChart({ user_id, mock_test_id: 1 }),
@@ -80,13 +81,11 @@ const Stats = () => {
         )}
       </div>
       <Grid className="grid-cols-1 lg:grid-cols-2 gap-2 md:gap-4 h-full">
-        <Card>
-          <CardHeader>
-            <CardTitle className="md:text-base">Performance Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="space-y-4">
+          <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Performance Overview</p>
+          <div className="bg-slate-50 rounded-2xl p-4">
             {radarChartDataIsLoading ? (
-              <Skeleton className="w-full h-[22rem]" />
+              <Skeleton className="w-full h-88" />
             ) : !radarMetrics || isEmpty(radarMetrics) ? (
               <NoDataAvailable />
             ) : (
@@ -95,25 +94,23 @@ const Stats = () => {
                 dataKey="value"
                 labelKey="label"
                 chartTitle="Performance Overview"
-                className="h-full w-full max-h-[300px] md:max-h-[225px] lg:max-h-[350px]"
+                className="h-full w-full max-h-75 md:max-h-56.25 lg:max-h-87.5"
               />
             )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="md:text-base"> Scores Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Scores Overview</p>
+          <div className="bg-slate-50 rounded-2xl p-4">
             {userScoresIsLoading ? (
-              <Skeleton className="w-full h-[22rem]" />
+              <Skeleton className="w-full h-88" />
             ) : !userScoresData || isEmpty(userScoresData) ? (
               <NoDataAvailable />
             ) : (
               <CustomLineChart
                 chartData={userScoresData}
                 dataKey="total_score"
-                className="h-full w-full max-h-[300px] md:max-h-[225px] lg:max-h-[350px]"
+                className="h-full w-full max-h-75 md:max-h-56.25 lg:max-h-87.5"
                 labelKey="date"
                 tooltip={
                   <ChartTooltipContent labelKey="date" valueKey="total_score" />
@@ -121,8 +118,8 @@ const Stats = () => {
                 xAxisInterval={Math.floor(userScoresData.length / 5)}
               />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </Grid>
     </FlexColumn>
   );

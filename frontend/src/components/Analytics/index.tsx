@@ -11,6 +11,7 @@ import useAnalyticsStore from "@/store/analytics";
 import { IPerformanceTrendProps } from "@/types/myStats";
 
 import NoDataAnalytics from "./NoDataAnalytics";
+import OverallPerformance from "./OverallPerformance";
 import PerformanceDetails from "./PerformanceDetails";
 import PerformanceTrend from "./PerformanceTrend";
 import RecentSessions from "./RecentSessions";
@@ -97,6 +98,9 @@ const Analytics = () => {
             </Suspense>
             <Suspense>
               <PerformanceTrend />
+            </Suspense>
+            <Suspense>
+              <OverallPerformance />
             </Suspense>
             <Suspense>
               <RecentSessions />

@@ -39,7 +39,7 @@ const AccountMenu = () => {
         src={userProfile.avatar || ""}
         alt="User"
         fallback={getInitialsFromName(userProfile.name || "")}
-        className="h-[2.2rem] w-[2.2rem] md:h-[2.5rem] md:w-[2.5rem]"
+        className="h-9 w-9 md:h-10 md:w-10"
       />
     );
   }, [userProfile]);
@@ -54,11 +54,11 @@ const AccountMenu = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-[15rem] !p-0 shadow-[0px_2px_20px_4px_rgba(0,0,0,0.12)] sm:w-[17.5rem]"
+          className="w-60 !p-0 shadow-[0px_2px_20px_4px_rgba(0,0,0,0.12)] sm:w-70"
         >
-          <FlexRow className="items-center gap-3 border-b-[1px] border-[#D7D7D7] px-3 py-2">
+          <FlexRow className="items-center gap-3 border-b border-[#D7D7D7] px-3 py-2">
             {userAvatar}
-            <p className="line-clamp-1 text-sm font-bold uppercase text-[#475467] sm:text-base">
+            <p className="line-clamp-1 text-sm font-bold uppercase text-matt-100 sm:text-base">
               {userProfile?.name || ""}
             </p>
           </FlexRow>
@@ -66,23 +66,23 @@ const AccountMenu = () => {
             className="flex cursor-pointer !items-center gap-2 rounded-none p-3 hover:!bg-primary-100"
             onClick={() => router.push(`/bookmarks`)}
           >
-            <Book className="text-[#475467] size-5" />
-            <p className="pb-1 text-md text-[#475467]">My Bookmarks</p>
+            <Book className="text-matt-100 size-5" />
+            <p className="pb-1 text-md text-matt-100">My Bookmarks</p>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="flex cursor-pointer !items-center gap-2 rounded-none p-3 hover:!bg-primary-100"
-            onClick={() => router.push(`/user-profile/${userProfile.id}/stats`)}
+            onClick={() => router.push(`/my-profile`)}
           >
-            <Settings className="text-[#475467] size-5" />
-            <p className="pb-1 text-md text-[#475467]">My Profile</p>
+            <Settings className="text-matt-100 size-5" />
+            <p className="pb-1 text-md text-matt-100">My Profile</p>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2 rounded-none p-3 hover:!bg-primary-100"
             onClick={handleLogout}
             disabled={isLogoutLoading}
           >
-            <LogOut className="text-[#475467] size-5" />
-            <p className="pb-1 text-md text-[#475467]">Logout</p>
+            <LogOut className="text-matt-100 size-5" />
+            <p className="pb-1 text-md text-matt-100">Logout</p>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

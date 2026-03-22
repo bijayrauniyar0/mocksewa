@@ -3,7 +3,6 @@ import "slick-carousel/slick/slick-theme.css";
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import React from "react";
 
 import BindContentContainer from "@/components/common/BindContentContainer";
 import Footer from "@/components/common/Footer";
@@ -14,7 +13,6 @@ import { getReviews } from "@/services/ServerSide/reviews";
 
 import Suspense from "../common/Suspense";
 import AnimatingSVGClient from "./AnimatingSVGClient";
-import DailyChallengeWidget from "./DailyChallengeWidget";
 
 const FeatureCard = dynamic(() => import("./FeaturesCard"));
 const Section = dynamic(() => import("./Section"));
@@ -53,9 +51,9 @@ const Home = async () => {
             <AnimatingSVGClient />
           </FlexRow>
 
-          <Suspense>
+          {/* <Suspense>
             <DailyChallengeWidget />
-          </Suspense>
+          </Suspense> */}
 
           <Grid className="z-[9] mx-auto grid-cols-3 gap-2 text-center max-md:w-full md:w-4/5 md:gap-6 lg:w-1/2 lg:gap-8">
             {platformMetrics.map((metric) => (
