@@ -112,13 +112,10 @@ export default function PerformanceTrend() {
   const [selectedChartType, setSelectedChartType] = useState<
     Record<string, string>
   >(
-    chartKeysData.reduce(
-      (acc, item) => {
-        acc[item.value] = "bar";
-        return acc;
-      },
-      {} as Record<string, string>,
-    ),
+    chartKeysData.reduce((acc, item) => {
+      acc[item.value] = "bar";
+      return acc;
+    }, {} as Record<string, string>)
   );
 
   const [filterBy, setFilterBy] = useState<string>("last_3_weeks");
@@ -144,16 +141,11 @@ export default function PerformanceTrend() {
   const filteredOptions = React.useMemo(() => {
     if (mode === "ranked") {
       return chartKeysData.filter((opt) =>
-        ["avg_accuracy", "avg_elapsed_time"].includes(opt.value),
+        ["avg_accuracy", "avg_elapsed_time"].includes(opt.value)
       );
     }
     return chartKeysData.filter((opt) =>
-      [
-        "avg_score",
-        "total_questions",
-        "avg_elapsed_time",
-        "total_sessions",
-      ].includes(opt.value),
+      ["avg_score", "avg_elapsed_time"].includes(opt.value)
     );
   }, [mode]);
 
@@ -215,7 +207,7 @@ export default function PerformanceTrend() {
                         chartData={chartData}
                         fill={option.color}
                         tooltip={ChartTooltipContent}
-                        className="h-full w-full max-h-75 md:max-h-56.25 lg:max-h-87.5"
+                        className="h-full w-full max-h-60 md:max-h-64"
                       />
                     ) : (
                       <CustomBarChart
@@ -223,7 +215,7 @@ export default function PerformanceTrend() {
                         chartData={chartData}
                         fill={option.color}
                         tooltip={ChartTooltipContent}
-                        className="h-full w-full max-h-75 md:max-h-56.25 lg:max-h-87.5"
+                        className="h-full w-full max-h-60 md:max-h-64"
                       />
                     )}
                   </>

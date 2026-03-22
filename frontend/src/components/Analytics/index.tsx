@@ -12,7 +12,6 @@ import { IPerformanceTrendProps } from "@/types/myStats";
 
 import NoDataAnalytics from "./NoDataAnalytics";
 import OverallPerformance from "./OverallPerformance";
-import PerformanceDetails from "./PerformanceDetails";
 import PerformanceTrend from "./PerformanceTrend";
 import RecentSessions from "./RecentSessions";
 import Stats from "./Stats";
@@ -93,21 +92,10 @@ const Analytics = () => {
                 </FlexRow>
               </FlexRow>
             </FlexRow>
-            <Suspense>
-              <Stats timePeriodFilter={timePeriodFilter} />
-            </Suspense>
-            <Suspense>
-              <PerformanceTrend />
-            </Suspense>
-            <Suspense>
-              <OverallPerformance />
-            </Suspense>
-            <Suspense>
-              <RecentSessions />
-            </Suspense>
-            <Suspense>
-              <PerformanceDetails timePeriodFilter={timePeriodFilter} />
-            </Suspense>
+            <Stats timePeriodFilter={timePeriodFilter} />
+            <PerformanceTrend />
+            {/* <OverallPerformance /> */}
+            <RecentSessions />
           </FlexColumn>
         </BindContentContainer>
       )}

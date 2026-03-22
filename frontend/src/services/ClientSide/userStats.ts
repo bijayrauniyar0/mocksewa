@@ -8,12 +8,6 @@ export const getRecentSessions = async (params?: Record<string, any>) => {
   return authenticated(api).get("/analytics/recent-sessions/", { params });
 };
 
-export const getPerformanceDetails = async (params: Record<string, any>) => {
-  return authenticated(api).get("/analytics/performance-details/", {
-    params,
-  });
-};
-
 export const getPerformanceTrend = async (params: Record<string, any>) => {
   return authenticated(api).get("/analytics/performance-trend/", {
     params,

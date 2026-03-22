@@ -46,7 +46,8 @@ const OverallPerformance = () => {
 
   const { data: radarMetrics, isLoading: radarChartDataIsLoading } = useQuery({
     queryKey: ["radarMetrics", user_id, mockTestId],
-    queryFn: () => getMetricsForRadarChart({ user_id, mock_test_id: mockTestId }),
+    queryFn: () =>
+      getMetricsForRadarChart({ user_id, mock_test_id: mockTestId }),
     select: ({ data }) => {
       return Object.keys(data).map((key) => ({
         label: radarMetricsLabels[key].label,
@@ -68,7 +69,9 @@ const OverallPerformance = () => {
     <Grid className="grid-cols-1 lg:grid-cols-2 gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Subject Performance Overview</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Subject Performance Overview
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {radarChartDataIsLoading ? (
@@ -81,14 +84,16 @@ const OverallPerformance = () => {
               dataKey="value"
               labelKey="label"
               chartTitle="Performance Overview"
-              className="h-full w-full max-h-75 md:max-h-56.25 lg:max-h-87.5"
+              className="h-full w-full max-h-60 md:max-h-64"
             />
           )}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Score Progression</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Score Progression
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {userScoresIsLoading ? (
@@ -99,7 +104,7 @@ const OverallPerformance = () => {
             <CustomLineChart
               chartData={userScoresData}
               dataKey="total_score"
-              className="h-full w-full max-h-75 md:max-h-56.25 lg:max-h-87.5"
+              className="h-full w-full max-h-60 md:max-h-64"
               labelKey="date"
               tooltip={
                 <ChartTooltipContent labelKey="date" valueKey="total_score" />
