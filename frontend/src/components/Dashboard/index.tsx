@@ -4,9 +4,7 @@ import {
   ArrowRight,
   Award,
   BookOpen,
-  Clock,
   Flame,
-  Lightbulb,
   Play,
   Sparkles,
   TrendingUp,
@@ -19,145 +17,110 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const Dashboard = () => {
-  // Mock data
   const userName = "Priya Sharma";
+  const currentSubject = "English";
+
   const dailyChallenge = {
     title: "English Grammar - Sentence Correction",
-    description: "Test your skills with 5 tricky grammar questions",
+    description: "Test your skills with 5 carefully selected grammar questions",
     difficulty: "Medium",
     questions: 5,
     timeLimit: 10,
-    category: "English",
     reward: 50,
   };
 
   const stats = [
     {
-      label: "Overall Accuracy",
-      value: "76%",
+      label: "Your Accuracy",
+      value: "82%",
       icon: <TrendingUp className="w-5 h-5" />,
     },
     {
-      label: "Consecutive Days",
+      label: "Current Streak",
       value: "8 days",
       icon: <Flame className="w-5 h-5" />,
     },
     {
-      label: "Practice Tests",
-      value: "47",
+      label: "Tests Completed",
+      value: "23",
       icon: <BookOpen className="w-5 h-5" />,
     },
     {
-      label: "Total Score",
-      value: "3,580",
+      label: "Points Earned",
+      value: "2,850",
       icon: <Award className="w-5 h-5" />,
     },
   ];
 
-  const recentAttempts = [
+  const recentSessions = [
     {
       id: 1,
-      subject: "Mathematics",
-      tests: "Algebra & Geometry",
+      title: "Sentence Completion",
       date: "Today",
-      accuracy: 82,
-      questions: 30,
+      accuracy: 85,
+      questions: 15,
+      duration: 12,
     },
     {
       id: 2,
-      subject: "Science",
-      tests: "Physics - Motion",
+      title: "Reading Comprehension",
       date: "Yesterday",
-      accuracy: 75,
-      questions: 25,
+      accuracy: 80,
+      questions: 10,
+      duration: 18,
     },
     {
       id: 3,
-      subject: "English",
-      tests: "Reading Comprehension",
+      title: "Grammar Rules",
       date: "2 days ago",
       accuracy: 88,
       questions: 20,
+      duration: 20,
     },
-  ];
-
-  const subjectProgress = [
     {
-      subject: "Mathematics",
-      completed: 18,
-      total: 30,
+      id: 4,
+      title: "Vocabulary & Usage",
+      date: "3 days ago",
       accuracy: 78,
-      level: "Intermediate",
-    },
-    {
-      subject: "English",
-      completed: 12,
-      total: 20,
-      accuracy: 84,
-      level: "Advanced",
-    },
-    {
-      subject: "Science",
-      completed: 15,
-      total: 25,
-      accuracy: 72,
-      level: "Beginner",
-    },
-    {
-      subject: "General Knowledge",
-      completed: 22,
-      total: 35,
-      accuracy: 81,
-      level: "Intermediate",
+      questions: 12,
+      duration: 14,
     },
   ];
 
-  const topRanked = [
+  const topScorers = [
     { rank: 1, name: "Arjun Patel", score: 5240 },
     { rank: 2, name: "Meera Singh", score: 5120 },
     { rank: 3, name: "Vikram Kumar", score: 4890 },
   ];
 
-  const practiceOptions = [
+  const practiceCategories = [
     {
-      id: 1,
       title: "Practice Mode",
-      description: "Unlimited questions, learn at your pace",
-      icon: "📚",
-      color: "bg-blue-50",
-      borderColor: "border-blue-200",
+      description: "Unlimited questions at your pace",
     },
     {
-      id: 2,
       title: "Ranked Mode",
-      description: "Compete with other students, build streaks",
-      icon: "🏆",
-      color: "bg-purple-50",
-      borderColor: "border-purple-200",
+      description: "Compete & build streaks",
     },
     {
-      id: 3,
-      title: "Full Mock Test",
-      description: "Real exam simulation with time limit",
-      icon: "⏱️",
-      color: "bg-orange-50",
-      borderColor: "border-orange-200",
+      title: "Mock Test",
+      description: "Real exam simulation",
     },
   ];
 
   return (
     <div className="w-full space-y-8">
       {/* Welcome Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            Welcome back, {userName}!
+            Welcome back, {userName}
           </h1>
           <p className="mt-2 text-slate-600">
-            Continue your practice journey and master MCQs
+            Master {currentSubject} with focused practice
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-lg bg-slate-100 px-4 py-3 w-fit">
           <Flame className="h-5 w-5 text-orange-500" />
           <div>
             <p className="text-xs text-slate-600">Current Streak</p>
@@ -174,7 +137,7 @@ const Dashboard = () => {
         <div className="relative z-10">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 backdrop-blur">
             <Sparkles className="h-4 w-4" />
-            <span className="text-sm font-semibold">Daily MCQ Challenge</span>
+            <span className="text-sm font-semibold">Daily Challenge</span>
           </div>
           
           <div className="grid gap-8 md:grid-cols-3 md:items-center">
@@ -211,11 +174,11 @@ const Dashboard = () => {
             </div>
             
             <div className="hidden rounded-2xl bg-white/10 p-6 backdrop-blur md:flex md:flex-col md:items-center md:justify-center">
-              <div className="mb-4 inline-flex items-center justify-center rounded-full bg-white/20 p-6">
-                <Lightbulb className="h-10 w-10" />
+              <div className="mb-4 inline-flex items-center justify-center rounded-lg bg-white/20 p-4">
+                <BookOpen className="h-8 w-8" />
               </div>
               <p className="text-center text-sm font-semibold">
-                Maintain your streak to earn bonus points
+                Consistent practice builds mastery
               </p>
             </div>
           </div>
@@ -247,19 +210,18 @@ const Dashboard = () => {
       {/* Practice Modes */}
       <div>
         <div className="mb-6">
-          <h3 className="text-lg font-bold text-slate-900">Choose Your Practice Mode</h3>
-          <p className="text-sm text-slate-600">Select how you want to practice today</p>
+          <h3 className="text-lg font-bold text-slate-900">How to Practice</h3>
+          <p className="text-sm text-slate-600">Choose your preferred practice method</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          {practiceOptions.map((mode) => (
+          {practiceCategories.map((mode, idx) => (
             <Card
-              key={mode.id}
-              className={`border-2 p-6 transition-all hover:shadow-md cursor-pointer ${mode.color} ${mode.borderColor}`}
+              key={idx}
+              className="border-2 border-slate-200 p-6 transition-all hover:border-primary-400 hover:shadow-md cursor-pointer hover:bg-slate-50"
             >
-              <div className="mb-4 text-3xl">{mode.icon}</div>
               <h4 className="mb-2 font-bold text-slate-900">{mode.title}</h4>
               <p className="mb-4 text-sm text-slate-600">{mode.description}</p>
-              <Button variant="outline" className="w-full border-slate-300">
+              <Button variant="outline" className="w-full border-slate-300 text-slate-700">
                 Start <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Card>
@@ -269,63 +231,60 @@ const Dashboard = () => {
 
       {/* Main Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Attempts */}
+        {/* Recent Practice Sessions */}
         <Card className="border-0 bg-white p-6 shadow-sm lg:col-span-2">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Recent Attempts</h3>
-              <p className="text-sm text-slate-600">Your latest MCQ practice sessions</p>
+              <h3 className="text-lg font-bold text-slate-900">Recent Sessions</h3>
+              <p className="text-sm text-slate-600">{currentSubject} practice history</p>
             </div>
             <Link
               href="/history"
               className="text-sm font-semibold text-primary-600 hover:text-primary-700"
             >
-              View History →
+              View All
             </Link>
           </div>
           <div className="space-y-3">
-            {recentAttempts.map((attempt) => (
+            {recentSessions.map((session) => (
               <div
-                key={attempt.id}
+                key={session.id}
                 className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4 transition-all hover:border-primary-300 hover:bg-white"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-primary-600" />
-                    <h4 className="font-semibold text-slate-900">{attempt.subject}</h4>
-                  </div>
-                  <p className="text-sm text-slate-600">{attempt.tests}</p>
+                  <h4 className="font-semibold text-slate-900">{session.title}</h4>
+                  <p className="text-sm text-slate-600">{session.questions} questions • {session.duration} minutes</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-slate-900">{attempt.accuracy}%</p>
-                  <p className="text-xs text-slate-500">{attempt.questions} Q • {attempt.date}</p>
+                  <p className="text-lg font-bold text-slate-900">{session.accuracy}%</p>
+                  <p className="text-xs text-slate-500">{session.date}</p>
                 </div>
               </div>
             ))}
           </div>
         </Card>
 
-        {/* Ranked Leaderboard */}
+        {/* Leaderboard */}
         <Card className="border-0 bg-white p-6 shadow-sm">
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-slate-900">Top Ranked</h3>
-            <p className="text-sm text-slate-600">Best scorers this month</p>
+            <h3 className="text-lg font-bold text-slate-900">Top Scorers</h3>
+            <p className="text-sm text-slate-600">{currentSubject} leaderboard</p>
           </div>
           <div className="space-y-4">
-            {topRanked.map((player) => (
-              <div key={player.rank} className="flex items-center gap-3">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full font-bold text-white ${
-                  player.rank === 1 ? 'bg-yellow-500' :
-                  player.rank === 2 ? 'bg-slate-400' :
-                  'bg-orange-500'
+            {topScorers.map((scorer) => (
+              <div key={scorer.rank} className="flex items-center gap-3">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-white ${
+                  scorer.rank === 1 ? 'bg-yellow-500' :
+                  scorer.rank === 2 ? 'bg-slate-400' :
+                  'bg-slate-300'
                 }`}>
-                  {player.rank}
+                  {scorer.rank}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">
-                    {player.name}
+                    {scorer.name}
                   </p>
-                  <p className="text-xs text-slate-500">{player.score} points</p>
+                  <p className="text-xs text-slate-500">{scorer.score} points</p>
                 </div>
               </div>
             ))}
@@ -342,40 +301,29 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Subject Progress */}
+      {/* Performance Summary */}
       <Card className="border-0 bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <h3 className="text-lg font-bold text-slate-900">Your Subject Progress</h3>
-          <p className="text-sm text-slate-600">Track your mastery across all subjects</p>
+          <h3 className="text-lg font-bold text-slate-900">Your Performance</h3>
+          <p className="text-sm text-slate-600">{currentSubject} statistics</p>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2">
-          {subjectProgress.map((subject) => (
-            <div key={subject.subject} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h4 className="font-semibold text-slate-900">{subject.subject}</h4>
-                <span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700">
-                  {subject.level}
-                </span>
-              </div>
-              <div className="mb-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm text-slate-600">Progress</p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {subject.completed}/{subject.total}
-                  </p>
-                </div>
-                <div className="h-2 w-full rounded-full bg-slate-300">
-                  <div
-                    className="h-full rounded-full bg-primary-600 transition-all"
-                    style={{ width: `${(subject.completed / subject.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-              <p className="text-sm text-slate-600">
-                Accuracy: <span className="font-semibold text-slate-900">{subject.accuracy}%</span>
-              </p>
-            </div>
-          ))}
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-600 mb-2">Total Questions</p>
+            <p className="text-3xl font-bold text-slate-900">127</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-600 mb-2">Correct Answers</p>
+            <p className="text-3xl font-bold text-primary-600">104</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-600 mb-2">Time Spent</p>
+            <p className="text-3xl font-bold text-slate-900">4h 32m</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-600 mb-2">Rank</p>
+            <p className="text-3xl font-bold text-slate-900">#47</p>
+          </div>
         </div>
       </Card>
     </div>
