@@ -10,14 +10,13 @@ export const metadata = {
 
 const DailyChallengePage = () => {
   return (
-    <ProtectedLayout>
-      <Suspense>
-        <MCQProvider isDailyChallenge={true}>
-          <MCQSection />
-        </MCQProvider>
-      </Suspense>
-    </ProtectedLayout>
+    <Suspense>
+      <MCQProvider isDailyChallenge={true}>
+        <MCQSection />
+      </MCQProvider>
+    </Suspense>
   );
 };
+
 
 export default DailyChallengePage;

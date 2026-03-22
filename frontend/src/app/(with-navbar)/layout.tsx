@@ -3,7 +3,7 @@ const Navbar = dynamic(() => import("@/components/common/Navbar"), {
   ssr: true,
 });
 
-export default async function AuthenticatedLayout({
+export default async function NavigationLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -15,3 +15,4 @@ export default async function AuthenticatedLayout({
     </>
   );
 }
+
