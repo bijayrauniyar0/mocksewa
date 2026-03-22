@@ -770,34 +770,114 @@ export const getDailyChallenge = async (req: Request, res: Response) => {
 
 export const submitChallengeScore = async (req: Request, res: Response) => {
   const { user } = req;
-  const { challenge_id, score, elapsed_time } = req.body;
+  const { challenge_id, section_scores, elapsed_time } = req.body;
 
   if (!user) {
     res.status(401).json({ message: 'Unauthorized' });
     return;
   }
 
+  const transaction = await sequelize.transaction();
+
   try {
     // Check if already attempted
     const existing = await ChallengeParticipant.findOne({
       where: { challenge_id, user_id: user.id },
+      transaction,
     });
 
     if (existing) {
+      await transaction.rollback();
       res.status(400).json({ message: 'Challenge already attempted today' });
       return;
     }
 
-    const participant = await ChallengeParticipant.create({
-      challenge_id,
-      user_id: user.id,
-      score,
-      elapsed_time,
-      attempted_at: new Date(),
+    const challenge = await Challenge.findByPk(challenge_id, { transaction });
+    if (!challenge) {
+      await transaction.rollback();
+      res.status(404).json({ message: 'Challenge not found' });
+      return;
+    }
+
+    const sectionId = challenge.subject_id;
+    const sectionMeta = await Section.findByPk(sectionId, {
+      attributes: ['marks_per_question', 'negative_marking'],
+      transaction,
     });
 
-    res.status(201).json(participant);
+    if (!sectionMeta) {
+      await transaction.rollback();
+      res.status(404).json({ message: 'Challenge subject metadata not found' });
+      return;
+    }
+
+    const { marks_per_question, negative_marking } = sectionMeta;
+
+    const sectionIds = Object.keys(section_scores).map(Number);
+    const questionIds: number[] = [];
+    for (const section of Object.values(section_scores)) {
+      for (const qId of Object.keys(section as Record<string, any>)) {
+        questionIds.push(Number(qId));
+      }
+    }
+
+    const mcqs = await MCQ.findAll({
+      where: { id: questionIds },
+      attributes: ['id', 'answer'],
+      transaction,
+    });
+
+    const allAnswersHash: Record<number, number | null> = {};
+    for (const mcq of mcqs) {
+      allAnswersHash[mcq.id] = mcq.answer !== null ? Number(mcq.answer) : null;
+    }
+
+    let totalScore = 0;
+    const evaluation = { right: 0, wrong: 0, unanswered: 0 };
+
+    for (const sId of sectionIds) {
+      const sectionAnswers = section_scores[sId];
+
+      for (const [questionIdStr, selectedOption] of Object.entries(
+        sectionAnswers,
+      )) {
+        const questionId = Number(questionIdStr);
+        const correctAnswer = allAnswersHash[questionId];
+
+        if (selectedOption === null) {
+          evaluation.unanswered++;
+          continue;
+        }
+
+        if (correctAnswer === null) continue;
+
+        if (selectedOption === correctAnswer) {
+          totalScore += marks_per_question;
+          evaluation.right++;
+        } else {
+          totalScore -= negative_marking;
+          evaluation.wrong++;
+        }
+      }
+    }
+
+    await ChallengeParticipant.create(
+      {
+        challenge_id,
+        user_id: user.id,
+        score: totalScore,
+        elapsed_time,
+        attempted_at: new Date(),
+      },
+      { transaction },
+    );
+
+    await transaction.commit();
+
+    res.status(201).json({ answers: allAnswersHash, evaluation });
   } catch (error) {
+    await transaction.rollback();
     res.status(500).json({ message: 'Internal server error', error });
   }
 };
+
